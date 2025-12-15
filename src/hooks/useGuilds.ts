@@ -616,19 +616,25 @@ export const useGuilds = () => {
       // Check if invite already exists
       const { data: existing } = await supabase
         .from('guild_invites')
-        .select('id')
+        .select('id, status')
         .eq('guild_id', myGuild.id)
         .eq('invitee_id', inviteeId)
-        .eq('status', 'pending')
         .maybeSingle();
 
       if (existing) {
-        toast({
-          variant: "destructive",
-          title: "Already Invited",
-          description: `${inviteeName} already has a pending invite.`,
-        });
-        return false;
+        if (existing.status === 'pending') {
+          toast({
+            variant: "destructive",
+            title: "Already Invited",
+            description: `${inviteeName} already has a pending invite.`,
+          });
+          return false;
+        }
+        // Delete old non-pending invite to allow re-inviting
+        await supabase
+          .from('guild_invites')
+          .delete()
+          .eq('id', existing.id);
       }
 
       // Check if user is already in a guild
