@@ -2,6 +2,9 @@
 @tailwind components;
 @tailwind utilities;
 
+/* Import Cinzel font */
+@import url('https://fonts.googleapis.com/css2?family=Cinzel:wght@400;500;600;700;800;900&display=swap');
+
 /* Definition of the design system. All colors, gradients, fonts, etc should be defined here. 
 All colors MUST be HSL.
 */
@@ -93,6 +96,11 @@ All colors MUST be HSL.
     66% { transform: translateY(-10px) translateX(-10px); }
   }
 
+  @keyframes floatUpDown {
+    0%, 100% { transform: translateY(0); }
+    50% { transform: translateY(-10px); }
+  }
+
   @keyframes twinkle {
     0%, 100% { opacity: 0.3; transform: scale(1); }
     50% { opacity: 1; transform: scale(1.5); }
@@ -133,6 +141,31 @@ All colors MUST be HSL.
     66% { transform: scale(1.05) rotate(-1deg); opacity: 1; }
   }
 
+  @keyframes glowPulse {
+    0%, 100% { 
+      box-shadow: 0 0 20px var(--glow-color, hsl(45 100% 50% / 0.3));
+    }
+    50% { 
+      box-shadow: 0 0 40px var(--glow-color, hsl(45 100% 50% / 0.5)), 
+                  0 0 60px var(--glow-color, hsl(45 100% 50% / 0.3));
+    }
+  }
+
+  @keyframes beamMove {
+    0% { transform: translateX(-100%) rotate(45deg); }
+    100% { transform: translateX(200%) rotate(45deg); }
+  }
+
+  @keyframes drawIn {
+    0% { stroke-dashoffset: 100; opacity: 0; }
+    100% { stroke-dashoffset: 0; opacity: 1; }
+  }
+
+  @keyframes cornerDraw {
+    0% { clip-path: inset(0 100% 100% 0); opacity: 0; }
+    100% { clip-path: inset(0 0 0 0); opacity: 1; }
+  }
+
   .animate-shimmer {
     animation: shimmer 3s ease-in-out infinite;
   }
@@ -147,6 +180,26 @@ All colors MUST be HSL.
 
   .animate-stat-number {
     animation: stat-number 2s ease-in-out infinite;
+  }
+
+  .animate-float-up-down {
+    animation: floatUpDown 3s ease-in-out infinite;
+  }
+
+  .animate-glow-pulse {
+    animation: glowPulse 2s ease-in-out infinite;
+  }
+
+  .animate-beam {
+    animation: beamMove 8s linear infinite;
+  }
+
+  .animate-corner-draw {
+    animation: cornerDraw 0.8s ease-out forwards;
+  }
+
+  .font-cinzel {
+    font-family: 'Cinzel', serif;
   }
 }
 
