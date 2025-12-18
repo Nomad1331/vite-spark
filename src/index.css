@@ -190,6 +190,20 @@ All colors MUST be HSL.
     animation: glowPulse 2s ease-in-out infinite;
   }
 
+  .animate-glow-pulse-gold {
+    animation: glowPulseGold 2s ease-in-out infinite;
+  }
+
+  @keyframes glowPulseGold {
+    0%, 100% { 
+      box-shadow: 0 0 10px hsl(45 100% 50% / 0.3);
+    }
+    50% { 
+      box-shadow: 0 0 20px hsl(45 100% 50% / 0.5), 
+                  0 0 30px hsl(45 100% 50% / 0.3);
+    }
+  }
+
   .animate-beam {
     animation: beamMove 8s linear infinite;
   }

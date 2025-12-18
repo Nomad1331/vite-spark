@@ -2,6 +2,62 @@
 
 All notable changes to the Solo Leveling System will be documented in this file.
 
+## [3.9.2] - 2025-12-18
+
+### Added
+- **Guild Hall Visual Overhaul**: Comprehensive Solo Leveling themed enhancements
+  
+  **Guild Banner Enhancements**:
+  - Animated pulsing CYAN GLOW effect around guild emblem with box-shadow
+  - BIGGER power stat display (text-3xl) with counting animation from 0 to actual value
+  - GRADIENT background from slate-900 via teal-950 to slate-900
+  - FLOATING ANIMATION on castle emblem (3s up/down motion)
+  - Decorative L-SHAPED BRACKETS in top-left and bottom-right corners with cyan glow
+  
+  **Party Members Cards**:
+  - Guild Master cards have GOLD GLOW border (border-yellow-500 with box-shadow)
+  - POWER stat with ⚡ icon displayed next to each member's level in cyan-400
+  - AVATAR BORDERS matching role colors (2px gold for Guild Master, 1px slate for members)
+  - HOVER EFFECT: cards scale to 1.02 and lift -2px
+  - MANAGE button (MoreVertical icon) appears on hover with improved styling
+  
+  **System Messages Chat**:
+  - ⚡ SYSTEM ICON before the input placeholder
+  - Glowing MESSAGE BUBBLE icon in empty state with pulsing animation
+  - BORDER GLOW on entire chat panel (border-violet-500/50 with box-shadow)
+  - SUBTLE BACKGROUND (slate-800/30) on message bubbles with rounded corners
+  - TIMESTAMPS in small cyan-400/60 text on the right of each message
+  
+  **Guild Challenges Empty State**:
+  - Animated GLOWING TARGET icon with pulsing animation and blur effect
+  - GRADIENT BACKGROUND from slate-900 to slate-950
+  - LARGER text (text-xl) with cyan-400 color for "Create a challenge"
+  - SUBTITLE: "Set goals and compete together" in text-sm slate-400
+  - '+New' button styled with cyan-500 background and hover glow effect
+  
+  **Micro-Animations**:
+  - All cards FADE IN + SLIDE UP with staggered delays using Framer Motion
+  - HOVER SCALE effect (1.02) on all interactive cards
+  - Castle icons in header FLOAT up and down (3s animation)
+  - GLOW PULSE animation on Guild Master badge (gold glow intensity changes)
+  - NUMBER COUNTING animation on power stat (counts from 0 over 1 second)
+  
+  **Tab Bar Enhancements**:
+  - ACTIVE TAB indicator: glowing cyan border (3px) on bottom with box-shadow
+  - HOVER GLOW on inactive tabs
+  - ICONS before text: Globe for Browse Gates, Castle for My Guild, Trophy for Rankings
+  
+  **Atmospheric Background Effects**:
+  - Floating PARTICLES in background (20 tiny cyan dots, very low opacity 0.05-0.1)
+  - RADIAL GRADIENT overlay from center to edges for depth
+
+### Technical
+- Added `animate-glow-pulse-gold` CSS animation for gold glow effects
+- Added floating particle animation system using Framer Motion
+- Updated GuildBanner component with useEffect for number counting animation
+- Enhanced MemberCard with role-based glow effects
+- Updated GuildChallengesPanel with enhanced empty state styling
+
 ## [3.9.1] - 2025-12-15
 
 ### Fixed

@@ -67,18 +67,22 @@ const GuildChallengesPanel = ({ guildId, isLeader }: GuildChallengesPanelProps) 
   if (!guildId) return null;
 
   return (
-    <Card className="border-border/50 bg-card/30">
+    <Card className="border-border/50 bg-gradient-to-br from-slate-900 to-slate-950 overflow-hidden">
       <CardHeader>
         <div className="flex items-center justify-between">
           <div>
-            <CardTitle className="flex items-center gap-2">
+            <CardTitle className="flex items-center gap-2 font-cinzel">
               <Target className="h-5 w-5 text-primary" />
               Guild Challenges
             </CardTitle>
             <CardDescription>Work together for bonus rewards!</CardDescription>
           </div>
           {isLeader && (
-            <Button size="sm" onClick={() => setCreateModalOpen(true)}>
+            <Button 
+              size="sm" 
+              onClick={() => setCreateModalOpen(true)}
+              className="bg-cyan-500 hover:bg-cyan-400 hover:shadow-[0_0_15px_hsl(186_100%_50%/0.5)] transition-all"
+            >
               <Plus className="h-4 w-4 mr-1" />
               New
             </Button>
@@ -89,10 +93,16 @@ const GuildChallengesPanel = ({ guildId, isLeader }: GuildChallengesPanelProps) 
         {loading ? (
           <div className="text-center py-8 text-muted-foreground">Loading...</div>
         ) : activeChallenges.length === 0 && completedChallenges.length === 0 ? (
-          <div className="text-center py-8">
-            <Target className="h-12 w-12 mx-auto mb-3 opacity-30" />
-            <p className="text-muted-foreground">
-              {isLeader ? 'Create a challenge for your guild!' : 'No active challenges yet.'}
+          <div className="text-center py-12 bg-gradient-to-b from-slate-900 to-slate-950 rounded-xl">
+            <div className="relative inline-block mb-4">
+              <Target className="h-16 w-16 text-cyan-500/50 animate-pulse" />
+              <div className="absolute inset-0 rounded-full bg-cyan-500/20 blur-xl animate-pulse" />
+            </div>
+            <p className="text-xl font-cinzel text-cyan-400 mb-2">
+              {isLeader ? 'Create a challenge' : 'No challenges yet'}
+            </p>
+            <p className="text-sm text-slate-400">
+              Set goals and compete together
             </p>
           </div>
         ) : (

@@ -228,8 +228,34 @@ const Guilds = () => {
   }
 
   return (
-    <main className="md:pl-[70px] pt-16 pb-8 px-4 min-h-screen">
-      <div className="max-w-6xl mx-auto space-y-6">
+    <main className="md:pl-[70px] pt-16 pb-8 px-4 min-h-screen relative overflow-hidden">
+      {/* Atmospheric Background Effects */}
+      <div className="fixed inset-0 pointer-events-none z-0">
+        {/* Floating particles */}
+        {[...Array(20)].map((_, i) => (
+          <motion.div
+            key={i}
+            className="absolute w-1 h-1 rounded-full bg-cyan-500/10"
+            style={{
+              left: `${Math.random() * 100}%`,
+              top: `${Math.random() * 100}%`,
+            }}
+            animate={{
+              y: [0, -100, 0],
+              opacity: [0.05, 0.1, 0.05],
+            }}
+            transition={{
+              duration: 8 + Math.random() * 4,
+              repeat: Infinity,
+              delay: Math.random() * 5,
+            }}
+          />
+        ))}
+        {/* Radial gradient overlay */}
+        <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,transparent_0%,hsl(0_0%_0%/0.2)_100%)]" />
+      </div>
+      
+      <div className="max-w-6xl mx-auto space-y-6 relative z-10">
         {/* Epic Header */}
         <motion.div 
           className="relative text-center py-8 md:py-12 overflow-hidden rounded-3xl"
@@ -370,21 +396,21 @@ const Guilds = () => {
             <TabsList className="grid w-full grid-cols-3 bg-card/80 border border-primary/30 p-1.5 backdrop-blur-sm">
               <TabsTrigger 
                 value="browse" 
-                className="flex items-center gap-2 font-cinzel data-[state=active]:bg-gradient-to-r data-[state=active]:from-primary/30 data-[state=active]:to-cyan-500/20 data-[state=active]:text-primary data-[state=active]:shadow-[0_0_15px_hsl(var(--primary)/0.3)]"
+                className="relative flex items-center gap-2 font-cinzel transition-all duration-300 data-[state=active]:bg-gradient-to-r data-[state=active]:from-primary/30 data-[state=active]:to-cyan-500/20 data-[state=active]:text-primary hover:bg-primary/10 hover:shadow-[0_0_10px_hsl(var(--primary)/0.2)] data-[state=active]:shadow-[0_0_15px_hsl(var(--primary)/0.3)] data-[state=active]:after:absolute data-[state=active]:after:bottom-0 data-[state=active]:after:left-1/2 data-[state=active]:after:-translate-x-1/2 data-[state=active]:after:w-3/4 data-[state=active]:after:h-[3px] data-[state=active]:after:bg-cyan-500 data-[state=active]:after:rounded-full data-[state=active]:after:shadow-[0_0_10px_hsl(186_100%_50%/0.8)]"
               >
                 <Globe className="h-4 w-4" />
                 <span className="hidden sm:inline">Browse Gates</span>
               </TabsTrigger>
               <TabsTrigger 
                 value="my-guild" 
-                className="flex items-center gap-2 font-cinzel data-[state=active]:bg-gradient-to-r data-[state=active]:from-primary/30 data-[state=active]:to-cyan-500/20 data-[state=active]:text-primary data-[state=active]:shadow-[0_0_15px_hsl(var(--primary)/0.3)]"
+                className="relative flex items-center gap-2 font-cinzel transition-all duration-300 data-[state=active]:bg-gradient-to-r data-[state=active]:from-primary/30 data-[state=active]:to-cyan-500/20 data-[state=active]:text-primary hover:bg-primary/10 hover:shadow-[0_0_10px_hsl(var(--primary)/0.2)] data-[state=active]:shadow-[0_0_15px_hsl(var(--primary)/0.3)] data-[state=active]:after:absolute data-[state=active]:after:bottom-0 data-[state=active]:after:left-1/2 data-[state=active]:after:-translate-x-1/2 data-[state=active]:after:w-3/4 data-[state=active]:after:h-[3px] data-[state=active]:after:bg-cyan-500 data-[state=active]:after:rounded-full data-[state=active]:after:shadow-[0_0_10px_hsl(186_100%_50%/0.8)]"
               >
                 <Castle className="h-4 w-4" />
                 <span className="hidden sm:inline">My Guild</span>
               </TabsTrigger>
               <TabsTrigger 
                 value="rankings" 
-                className="flex items-center gap-2 font-cinzel data-[state=active]:bg-gradient-to-r data-[state=active]:from-primary/30 data-[state=active]:to-cyan-500/20 data-[state=active]:text-primary data-[state=active]:shadow-[0_0_15px_hsl(var(--primary)/0.3)]"
+                className="relative flex items-center gap-2 font-cinzel transition-all duration-300 data-[state=active]:bg-gradient-to-r data-[state=active]:from-primary/30 data-[state=active]:to-cyan-500/20 data-[state=active]:text-primary hover:bg-primary/10 hover:shadow-[0_0_10px_hsl(var(--primary)/0.2)] data-[state=active]:shadow-[0_0_15px_hsl(var(--primary)/0.3)] data-[state=active]:after:absolute data-[state=active]:after:bottom-0 data-[state=active]:after:left-1/2 data-[state=active]:after:-translate-x-1/2 data-[state=active]:after:w-3/4 data-[state=active]:after:h-[3px] data-[state=active]:after:bg-cyan-500 data-[state=active]:after:rounded-full data-[state=active]:after:shadow-[0_0_10px_hsl(186_100%_50%/0.8)]"
               >
                 <Trophy className="h-4 w-4" />
                 <span className="hidden sm:inline">Rankings</span>
@@ -522,10 +548,10 @@ const Guilds = () => {
                       animate={{ opacity: 1, x: 0 }}
                       transition={{ delay: 0.3 }}
                     >
-                      <Card className="border-2 border-violet-500/30 bg-gradient-to-br from-violet-950/50 to-slate-900 overflow-hidden rounded-xl shadow-[0_0_20px_hsl(270_70%_60%/0.2)]">
+                      <Card className="border-2 border-violet-500/50 bg-gradient-to-br from-violet-950/50 to-slate-900 overflow-hidden rounded-xl shadow-[0_0_25px_hsl(270_70%_60%/0.25)]">
                         <CardHeader className="border-b border-violet-500/20 bg-violet-500/5 p-4 md:p-6">
                           <CardTitle className="text-lg md:text-2xl font-cinzel flex items-center gap-3 text-violet-400">
-                            <MessageSquare className="h-5 w-5" />
+                            <Sparkles className="h-5 w-5" />
                             System Messages
                           </CardTitle>
                         </CardHeader>
@@ -534,8 +560,15 @@ const Guilds = () => {
                             <div className="space-y-4">
                               {guildMessages.length === 0 ? (
                                 <div className="text-center py-12 text-muted-foreground">
-                                  <MessageSquare className="h-12 w-12 mx-auto mb-3 opacity-30" />
-                                  <p>No messages yet. Start the conversation!</p>
+                                  <motion.div
+                                    animate={{ scale: [1, 1.1, 1], opacity: [0.3, 0.5, 0.3] }}
+                                    transition={{ duration: 2, repeat: Infinity }}
+                                    className="relative inline-block"
+                                  >
+                                    <MessageSquare className="h-16 w-16 mx-auto mb-3 text-violet-500/50" />
+                                    <div className="absolute inset-0 rounded-full bg-violet-500/20 blur-xl" />
+                                  </motion.div>
+                                  <p className="text-violet-300/70">No messages yet. Start the conversation!</p>
                                 </div>
                               ) : (
                                 guildMessages.map((msg) => {
@@ -548,7 +581,7 @@ const Guilds = () => {
                                       className={`p-3 rounded-lg border ${
                                         isMe
                                           ? 'bg-primary/10 border-primary/30 ml-4 md:ml-8'
-                                          : 'bg-slate-800/50 border-violet-500/30 mr-4 md:mr-8'
+                                          : 'bg-slate-800/30 border-violet-500/30 mr-4 md:mr-8'
                                       } hover:shadow-[0_0_10px_hsl(270_70%_60%/0.2)] transition-shadow`}
                                     >
                                       <div className="flex items-center gap-2 mb-1">
@@ -570,17 +603,20 @@ const Guilds = () => {
                           </ScrollArea>
                           
                           <div className="flex gap-2 p-4 border-t border-violet-500/20 bg-violet-500/5">
-                            <Input
-                              value={messageInput}
-                              onChange={(e) => setMessageInput(e.target.value)}
-                              placeholder="[SYSTEM] Enter message..."
-                              className="bg-slate-800 border-violet-500/30 focus:border-violet-500 rounded-lg"
-                              onKeyDown={(e) => e.key === 'Enter' && handleSendMessage()}
-                            />
+                            <div className="relative flex-1">
+                              <Zap className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-violet-400" />
+                              <Input
+                                value={messageInput}
+                                onChange={(e) => setMessageInput(e.target.value)}
+                                placeholder="[SYSTEM] Enter message..."
+                                className="pl-10 bg-slate-800 border-violet-500/30 focus:border-violet-500 rounded-lg"
+                                onKeyDown={(e) => e.key === 'Enter' && handleSendMessage()}
+                              />
+                            </div>
                             <Button 
                               onClick={handleSendMessage} 
                               size="icon"
-                              className="bg-violet-600 hover:bg-violet-500 rounded-lg hover:shadow-[0_0_15px_hsl(270_70%_60%/0.5)] transition-all"
+                              className="bg-violet-600 hover:bg-violet-500 rounded-lg hover:shadow-[0_0_15px_hsl(270_70%_60%/0.5)] transition-all hover:scale-105"
                             >
                               <Send className="h-4 w-4" />
                             </Button>
@@ -1207,11 +1243,32 @@ const GuildBanner = ({
   onDisband: () => void;
 }) => {
   const powerTier = getPowerTier(guild.total_power);
+  const [displayPower, setDisplayPower] = useState(0);
+  
+  // Number counting animation
+  useEffect(() => {
+    const duration = 1000;
+    const steps = 30;
+    const increment = guild.total_power / steps;
+    let current = 0;
+    
+    const timer = setInterval(() => {
+      current += increment;
+      if (current >= guild.total_power) {
+        setDisplayPower(guild.total_power);
+        clearInterval(timer);
+      } else {
+        setDisplayPower(Math.floor(current));
+      }
+    }, duration / steps);
+    
+    return () => clearInterval(timer);
+  }, [guild.total_power]);
   
   const getRoleBadgeStyle = (role: string) => {
     switch (role) {
       case 'guild_master':
-        return 'bg-gradient-to-r from-yellow-600 to-amber-500 text-white';
+        return 'bg-gradient-to-r from-yellow-600 to-amber-500 text-white animate-glow-pulse-gold';
       case 'vice_master':
         return 'bg-gradient-to-r from-violet-600 to-purple-500 text-white';
       case 'elite':
@@ -1237,29 +1294,35 @@ const GuildBanner = ({
       transition={{ delay: 0.1 }}
     >
       <Card className={`relative overflow-hidden border-2 ${powerTier.borderColor} ${powerTier.glow} min-h-[200px] md:min-h-[300px] rounded-2xl`}>
-        {/* Background gradient */}
-        <div className="absolute inset-0 bg-gradient-to-r from-slate-900 via-slate-800 to-slate-900" />
+        {/* Background gradient - enhanced with teal */}
+        <div className="absolute inset-0 bg-gradient-to-r from-slate-900 via-teal-950 to-slate-900" />
         <div className={`absolute inset-0 opacity-20 bg-gradient-to-br ${powerTier.color}`} />
         <div className="absolute inset-0 bg-gradient-to-r from-background/80 via-transparent to-background/80" />
         
-        {/* Corner decorations */}
-        <div className="absolute top-0 left-0 w-12 h-12 md:w-20 md:h-20 border-l-2 border-t-2 border-cyan-500 animate-corner-draw hidden md:block" />
-        <div className="absolute bottom-0 right-0 w-12 h-12 md:w-20 md:h-20 border-r-2 border-b-2 border-cyan-500 animate-corner-draw hidden md:block" />
+        {/* L-shaped Corner decorations */}
+        <div className="absolute top-0 left-0 w-12 h-12 md:w-20 md:h-20 border-l-2 border-t-2 border-cyan-500 animate-corner-draw shadow-[0_0_10px_hsl(186_100%_50%/0.5)]" />
+        <div className="absolute bottom-0 right-0 w-12 h-12 md:w-20 md:h-20 border-r-2 border-b-2 border-cyan-500 animate-corner-draw shadow-[0_0_10px_hsl(186_100%_50%/0.5)]" />
         
         <CardContent className="relative py-6 md:py-8 px-4 md:px-8">
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6 items-center">
-            {/* Left: Guild Emblem */}
+            {/* Left: Guild Emblem with animated glow */}
             <div className="flex justify-center md:justify-start">
               <motion.div 
-                className={`p-4 md:p-6 rounded-full bg-gradient-to-br ${powerTier.color} bg-opacity-20 border-2 md:border-3 ${powerTier.borderColor}`}
-                animate={{ y: [0, -5, 0] }}
+                className={`relative p-4 md:p-6 rounded-full bg-gradient-to-br ${powerTier.color} bg-opacity-20 border-2 md:border-3 ${powerTier.borderColor}`}
+                animate={{ y: [0, -8, 0] }}
                 transition={{ duration: 3, repeat: Infinity, ease: "easeInOut" }}
               >
+                {/* Pulsing cyan glow effect */}
+                <motion.div
+                  className="absolute inset-0 rounded-full bg-cyan-500/30 blur-xl"
+                  animate={{ scale: [1, 1.2, 1], opacity: [0.3, 0.6, 0.3] }}
+                  transition={{ duration: 2, repeat: Infinity }}
+                />
                 <motion.div
                   animate={{ scale: [1, 1.05, 1] }}
                   transition={{ duration: 2, repeat: Infinity }}
                 >
-                  <Castle className="h-16 w-16 md:h-24 md:w-24 text-white drop-shadow-lg" />
+                  <Castle className="h-16 w-16 md:h-24 md:w-24 text-white drop-shadow-lg relative z-10" />
                 </motion.div>
               </motion.div>
             </div>
@@ -1271,13 +1334,17 @@ const GuildBanner = ({
               </h2>
               
               <div className="flex flex-wrap items-center justify-center gap-3 mb-3">
-                <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-background/50 border border-primary/20">
-                  <Zap className="h-5 w-5 text-cyan-400" />
-                  <span className="font-cinzel text-lg md:text-2xl font-bold text-cyan-400">
-                    {guild.total_power.toLocaleString()}
+                {/* Bigger, more prominent power stat */}
+                <motion.div 
+                  className="flex items-center gap-2 px-4 py-2 rounded-lg bg-background/50 border border-cyan-500/30 shadow-[0_0_15px_hsl(186_100%_50%/0.2)]"
+                  whileHover={{ scale: 1.05 }}
+                >
+                  <Zap className="h-6 w-6 text-cyan-400" />
+                  <span className="font-cinzel text-2xl md:text-3xl font-bold text-cyan-400">
+                    {displayPower.toLocaleString()}
                   </span>
-                  <span className="text-xs text-muted-foreground">POWER</span>
-                </div>
+                  <span className="text-sm text-muted-foreground">POWER</span>
+                </motion.div>
                 
                 <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-background/50 border border-cyan-500/20">
                   <Users className="h-4 w-4 text-cyan-400" />
@@ -1369,31 +1436,33 @@ const MemberCard = ({
   onViewProfile: () => void;
   onManage: () => void;
 }) => {
-  const roleConfig: Record<string, { color: string; borderColor: string }> = {
-    guild_master: { color: 'text-yellow-400', borderColor: 'border-yellow-500' },
+  const roleConfig: Record<string, { color: string; borderColor: string; glow?: string }> = {
+    guild_master: { color: 'text-yellow-400', borderColor: 'border-yellow-500', glow: 'shadow-[0_0_15px_hsl(45_100%_50%/0.4)]' },
     vice_master: { color: 'text-violet-400', borderColor: 'border-violet-500' },
     elite: { color: 'text-cyan-400', borderColor: 'border-cyan-500' },
     member: { color: 'text-slate-400', borderColor: 'border-slate-600' },
   };
   
   const config = roleConfig[member.role] || roleConfig.member;
+  const isGuildMasterMember = member.role === 'guild_master';
   
   return (
     <motion.div
-      className="flex items-center justify-between p-3 md:p-4 rounded-lg bg-slate-800/50 hover:bg-slate-800 transition-all group border border-transparent hover:border-primary/20 hover:-translate-y-0.5"
-      whileHover={{ scale: 1.01 }}
+      className={`flex items-center justify-between p-3 md:p-4 rounded-lg bg-slate-800/50 hover:bg-slate-800 transition-all group border ${isGuildMasterMember ? 'border-yellow-500/50 ' + config.glow : 'border-transparent hover:border-primary/20'}`}
+      whileHover={{ scale: 1.02, y: -2 }}
+      transition={{ duration: 0.2 }}
     >
       <div 
         className="flex items-center gap-3 flex-1 cursor-pointer"
         onClick={onViewProfile}
       >
-        <div className={`relative rounded-full border-2 ${config.borderColor}`}>
+        <div className={`relative rounded-full border-2 ${config.borderColor} ${isGuildMasterMember ? 'border-2' : 'border'}`}>
           <HunterAvatar 
             avatar={member.avatar} 
             hunterName={member.hunter_name || 'Unknown'} 
             size="sm"
           />
-          {/* Online status dot - placeholder */}
+          {/* Online status dot */}
           <div className="absolute -bottom-0.5 -right-0.5 w-3 h-3 bg-green-500 rounded-full border-2 border-slate-800" />
         </div>
         <div className="flex-1 min-w-0">
@@ -1406,7 +1475,10 @@ const MemberCard = ({
           <div className="flex items-center gap-2 text-xs text-slate-400">
             <span>Lv. {member.level}</span>
             <span>•</span>
-            <span className="text-cyan-400">{member.power} ⚡</span>
+            <span className="flex items-center gap-1 text-cyan-400">
+              <Zap className="h-3 w-3" />
+              {member.power}
+            </span>
           </div>
         </div>
       </div>
@@ -1416,7 +1488,7 @@ const MemberCard = ({
           <Button
             variant="ghost"
             size="icon"
-            className="h-8 w-8 opacity-0 group-hover:opacity-100 transition-opacity"
+            className="h-8 w-8 opacity-0 group-hover:opacity-100 transition-opacity hover:bg-primary/20"
             onClick={(e) => { e.stopPropagation(); onManage(); }}
           >
             <MoreVertical className="h-4 w-4" />
