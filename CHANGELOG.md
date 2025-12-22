@@ -2,8 +2,12 @@
 
 All notable changes to the Solo Leveling System will be documented in this file.
 
-## [3.9.3] - 2025-12-18
+## [3.9.4] - 2025-12-22
 
+### Fixed
+- **Leaderboard Avatars**: Podium/row avatars now correctly render profile pictures (URL/base64/path) and fall back to class emoji when missing/broken.
+
+## [3.9.3] - 2025-12-18
 ### Added
 - **Hunter Rankings Epic Redesign**: Complete Solo Leveling themed overhaul of the Leaderboard page
 

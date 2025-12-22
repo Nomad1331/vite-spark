@@ -237,10 +237,11 @@ const PodiumCard = ({
           {position === 1 && (
             <div className="absolute inset-0 bg-yellow-500/20 animate-pulse z-0" />
           )}
-          <HunterAvatar 
-            avatar={entry.avatar} 
-            hunterName={entry.hunterName} 
-            size={position === 1 ? 'xl' : 'lg'}
+          <HunterAvatar
+            avatar={entry.avatar}
+            hunterName={entry.hunterName}
+            // Let the wrapper control the size to avoid nested sizing glitches
+            size="md"
             showBorder={false}
             className="w-full h-full"
           />
