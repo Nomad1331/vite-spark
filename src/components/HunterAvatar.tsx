@@ -25,10 +25,17 @@ interface HunterAvatarProps {
 }
 
 const sizeClasses = {
-  sm: 'h-8 w-8 text-xs',
-  md: 'h-10 w-10 text-sm',
-  lg: 'h-12 w-12 text-lg',
-  xl: 'h-20 w-20 text-3xl',
+  sm: 'h-8 w-8',
+  md: 'h-10 w-10',
+  lg: 'h-12 w-12',
+  xl: 'h-20 w-20',
+};
+
+const emojiSizeClasses = {
+  sm: 'text-base',
+  md: 'text-xl',
+  lg: 'text-2xl',
+  xl: 'text-4xl',
 };
 
 export const HunterAvatar = ({
@@ -76,7 +83,12 @@ export const HunterAvatar = ({
           onError={() => setImageError(true)}
         />
       ) : null}
-      <AvatarFallback className="bg-primary/20 text-primary font-bold flex items-center justify-center">
+      <AvatarFallback
+        className={cn(
+          'bg-primary/20 text-primary font-bold flex items-center justify-center leading-none select-none',
+          emojiSizeClasses[size]
+        )}
+      >
         {fallback}
       </AvatarFallback>
     </Avatar>

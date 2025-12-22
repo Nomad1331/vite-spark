@@ -250,7 +250,7 @@ const PodiumCard = ({
             <HunterAvatar
               avatar={entry.avatar}
               hunterName={entry.hunterName}
-              size="md"
+              size={position === 1 ? 'xl' : 'lg'}
               showBorder={false}
               className="h-full w-full"
             />
@@ -336,7 +336,7 @@ const HunterRow = ({
         <HunterAvatar 
           avatar={entry.avatar} 
           hunterName={entry.hunterName} 
-          size="md"
+          size="lg"
           showBorder={false}
           className="w-full h-full"
         />

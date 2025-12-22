@@ -2,10 +2,11 @@
 
 All notable changes to the Solo Leveling System will be documented in this file.
 
-## [3.9.4] - 2025-12-22
+## [3.9.5] - 2025-12-22
 
 ### Fixed
-- **Leaderboard Avatars**: Podium/row avatars now correctly render profile pictures (URL/base64/path) and fall back to class emoji when missing/broken.
+- **Leaderboard & Profile Modals**: Increased class emoji fallback size for non-PFP users and improved modal layout to prevent top content from being clipped.
+- **Avatar Rendering Consistency**: HunterProfileModal now uses HunterAvatar for consistent image/emoji handling.
 
 ## [3.9.3] - 2025-12-18
 ### Added

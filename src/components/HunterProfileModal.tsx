@@ -4,7 +4,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } f
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
 import { Skeleton } from '@/components/ui/skeleton';
-import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
+import { HunterAvatar } from '@/components/HunterAvatar';
 import { Crown, Shield, Zap, Brain, Heart, Eye, Flame, Trophy, Star, Swords } from 'lucide-react';
 import { VisuallyHidden } from '@radix-ui/react-visually-hidden';
 
@@ -102,7 +102,7 @@ export const HunterProfileModal = ({ open, onOpenChange, userId, hunterName }: H
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className={`max-w-md border-2 ${rankStyle.border} ${rankStyle.bg} shadow-lg ${rankStyle.glow}`}>
+      <DialogContent className={`max-w-md border-2 ${rankStyle.border} ${rankStyle.bg} shadow-lg ${rankStyle.glow} max-h-[85vh] overflow-y-auto`}>
         {loading ? (
           <div className="space-y-4 p-4">
             <Skeleton className="h-20 w-20 rounded-full mx-auto" />
@@ -121,16 +121,16 @@ export const HunterProfileModal = ({ open, onOpenChange, userId, hunterName }: H
                 <DialogDescription>Hunter profile for {hunterName}</DialogDescription>
               </VisuallyHidden>
               {/* Avatar with glowing ring */}
-              <div className="relative mx-auto">
+              <div className="relative mx-auto pt-2">
                 <div className={`absolute inset-0 rounded-full blur-lg ${rankStyle.bg} opacity-60`} />
-                <Avatar className={`relative w-24 h-24 border-4 ${rankStyle.border} shadow-xl`}>
-                  {profile?.avatar?.startsWith('data:') ? (
-                    <AvatarImage src={profile.avatar} alt={hunterName} className="object-cover" />
-                  ) : null}
-                  <AvatarFallback className={`text-4xl ${rankStyle.bg}`}>
-                    {CLASS_EMOJIS[profile?.avatar || 'default'] || CLASS_EMOJIS.default}
-                  </AvatarFallback>
-                </Avatar>
+                <div className={`relative rounded-full border-4 ${rankStyle.border} shadow-xl p-1 bg-background/20`}>
+                  <HunterAvatar
+                    avatar={profile?.avatar}
+                    hunterName={hunterName}
+                    size="xl"
+                    showBorder={false}
+                  />
+                </div>
                 {/* Rank badge overlay */}
                 <div className={`absolute -bottom-2 -right-2 px-2 py-0.5 rounded-full border ${rankStyle.border} ${rankStyle.bg} ${rankStyle.text} text-xs font-bold shadow-lg`}>
                   {stats?.rank}
