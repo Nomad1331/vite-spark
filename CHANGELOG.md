@@ -2,6 +2,15 @@
 
 All notable changes to the Solo Leveling System will be documented in this file.
 
+## [3.9.6] - 2025-12-23
+
+### Fixed
+- **Habits XP Exploit Prevention**: Habit XP rewards are now formula-based (Win XP = Days × 20, Lose XP = Days × 10) instead of user-configurable to prevent exploitation.
+- **Necromancer Challenge Streak Detection**: Fixed the legendary challenge failing to detect broken streaks. Now properly checks if user missed a day based on last completion date, not just streak counter drops.
+
+### Changed
+- Habit creation dialog now displays calculated XP stakes instead of manual input fields.
+
 ## [3.9.5] - 2025-12-22
 
 ### Fixed
