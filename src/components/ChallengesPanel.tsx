@@ -171,15 +171,41 @@ export const ChallengesPanel = () => {
     
     const streakData = storage.getStreak();
     const currentStreak = streakData.currentStreak;
+    const lastCompletionDate = streakData.lastCompletionDate;
     
     setNecroChallenge((prev) => {
       if (prev.status === "pending") return prev;
       
-      // Detect streak failure: if current streak < previous tracked progress AND challenge was active
-      const hadProgress = prev.requirement.current > 0;
-      const streakBroken = currentStreak < prev.requirement.current && hadProgress;
+      // Get today's date and yesterday's date in the user's timezone
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      const yesterday = new Date(today);
+      yesterday.setDate(yesterday.getDate() - 1);
       
-      if (streakBroken && prev.status === "active") {
+      // Parse last completion date
+      let lastCompletion: Date | null = null;
+      if (lastCompletionDate) {
+        lastCompletion = new Date(lastCompletionDate);
+        lastCompletion.setHours(0, 0, 0, 0);
+      }
+      
+      // Detect streak failure: 
+      // 1. User had progress (was active) AND
+      // 2. Either current streak dropped OR user missed completing yesterday (and today not yet completed)
+      const hadProgress = prev.requirement.current > 0 && prev.status === "active";
+      const streakDropped = currentStreak < prev.requirement.current;
+      
+      // Check if user missed a day - if last completion is older than yesterday
+      let missedDay = false;
+      if (hadProgress && lastCompletion) {
+        const daysSinceLastCompletion = Math.floor((today.getTime() - lastCompletion.getTime()) / (1000 * 60 * 60 * 24));
+        // If more than 1 day has passed since last completion, streak is broken
+        missedDay = daysSinceLastCompletion > 1;
+      }
+      
+      const streakBroken = hadProgress && (streakDropped || missedDay);
+      
+      if (streakBroken) {
         // Apply penalties based on mode
         if (prev.mode === "hard") {
           applyNecromancerHardPenalty();

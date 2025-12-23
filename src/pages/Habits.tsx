@@ -24,6 +24,12 @@ const HABIT_COLORS = [
   "hsl(350, 80%, 60%)", // red
 ];
 
+// Formula-based XP calculation to prevent exploitation
+const calculateHabitXP = (days: number) => ({
+  winXP: days * 20,
+  loseXP: days * 10,
+});
+
 const Habits = () => {
   const [habits, setHabits] = useState<Habit[]>([]);
   const [newHabit, setNewHabit] = useState({
@@ -31,8 +37,6 @@ const Habits = () => {
     icon: "🌱",
     color: HABIT_COLORS[0],
     goalDays: 30,
-    winXP: 300,
-    loseXP: 200,
   });
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const { addXP } = usePlayerStats();
@@ -56,6 +60,7 @@ const Habits = () => {
       return;
     }
 
+    const xpValues = calculateHabitXP(newHabit.goalDays);
     const habit: Habit = {
       id: Date.now().toString(),
       name: newHabit.name,
@@ -63,8 +68,8 @@ const Habits = () => {
       color: newHabit.color,
       completionGrid: {},
       goalDays: newHabit.goalDays,
-      winXP: newHabit.winXP,
-      loseXP: newHabit.loseXP,
+      winXP: xpValues.winXP,
+      loseXP: xpValues.loseXP,
       startDate: new Date().toISOString().split("T")[0],
       endDate: null,
       status: "active",
@@ -77,13 +82,11 @@ const Habits = () => {
       icon: "🌱",
       color: HABIT_COLORS[0],
       goalDays: 30,
-      winXP: 300,
-      loseXP: 200,
     });
 
     toast({
       title: "⚡ Habit Created",
-      description: `${habit.icon} ${habit.name} - ${habit.goalDays} day challenge!`,
+      description: `${habit.icon} ${habit.name} - ${habit.goalDays} day challenge! (Win: +${xpValues.winXP} XP / Lose: -${xpValues.loseXP} XP)`,
     });
   };
 
@@ -312,33 +315,25 @@ const Habits = () => {
                 </div>
               </div>
 
-              <div className="grid grid-cols-3 gap-4">
+              <div className="space-y-3">
                 <div>
                   <Label>Goal Days</Label>
                   <Input
                     type="number"
+                    min="1"
+                    max="365"
                     value={newHabit.goalDays}
-                    onChange={(e) => setNewHabit({ ...newHabit, goalDays: parseInt(e.target.value) })}
+                    onChange={(e) => setNewHabit({ ...newHabit, goalDays: Math.max(1, Math.min(365, parseInt(e.target.value) || 1)) })}
                     className="bg-background border-border"
                   />
                 </div>
-                <div>
-                  <Label>Win XP</Label>
-                  <Input
-                    type="number"
-                    value={newHabit.winXP}
-                    onChange={(e) => setNewHabit({ ...newHabit, winXP: parseInt(e.target.value) })}
-                    className="bg-background border-border"
-                  />
-                </div>
-                <div>
-                  <Label>Lose XP</Label>
-                  <Input
-                    type="number"
-                    value={newHabit.loseXP}
-                    onChange={(e) => setNewHabit({ ...newHabit, loseXP: parseInt(e.target.value) })}
-                    className="bg-background border-border"
-                  />
+                <div className="p-3 bg-muted/30 rounded-lg border border-border">
+                  <p className="text-xs text-muted-foreground mb-2">XP Stakes (based on {newHabit.goalDays} days)</p>
+                  <div className="flex justify-between text-sm">
+                    <span className="text-neon-cyan">Win: +{calculateHabitXP(newHabit.goalDays).winXP} XP</span>
+                    <span className="text-destructive">Lose: -{calculateHabitXP(newHabit.goalDays).loseXP} XP</span>
+                  </div>
+                  <p className="text-xs text-muted-foreground mt-1">Formula: Win = Days × 20, Lose = Days × 10</p>
                 </div>
               </div>
 
