@@ -24,11 +24,37 @@ const HABIT_COLORS = [
   "hsl(350, 80%, 60%)", // red
 ];
 
+// Anti-exploit constants
+const MIN_GOAL_DAYS = 7; // Minimum days for a habit
+const MAX_HABITS_PER_DAY = 5; // Maximum habits that can be created per day
+const CREATION_COOLDOWN_KEY = "habit_creation_log";
+
 // Formula-based XP calculation to prevent exploitation
 const calculateHabitXP = (days: number) => ({
   winXP: days * 20,
   loseXP: days * 10,
 });
+
+// Get habits created today for rate limiting
+const getHabitsCreatedToday = (): number => {
+  const log = localStorage.getItem(CREATION_COOLDOWN_KEY);
+  if (!log) return 0;
+  
+  try {
+    const { date, count } = JSON.parse(log);
+    const today = new Date().toISOString().split("T")[0];
+    return date === today ? count : 0;
+  } catch {
+    return 0;
+  }
+};
+
+// Increment habits created today
+const incrementHabitsCreatedToday = () => {
+  const today = new Date().toISOString().split("T")[0];
+  const currentCount = getHabitsCreatedToday();
+  localStorage.setItem(CREATION_COOLDOWN_KEY, JSON.stringify({ date: today, count: currentCount + 1 }));
+};
 
 const Habits = () => {
   const [habits, setHabits] = useState<Habit[]>([]);
@@ -36,7 +62,7 @@ const Habits = () => {
     name: "",
     icon: "🌱",
     color: HABIT_COLORS[0],
-    goalDays: 30,
+    goalDays: MIN_GOAL_DAYS, // Default to minimum
   });
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const { addXP } = usePlayerStats();
@@ -60,14 +86,28 @@ const Habits = () => {
       return;
     }
 
-    const xpValues = calculateHabitXP(newHabit.goalDays);
+    // Anti-exploit: Rate limiting - check daily creation limit
+    const habitsCreatedToday = getHabitsCreatedToday();
+    if (habitsCreatedToday >= MAX_HABITS_PER_DAY) {
+      toast({ 
+        title: "Daily Limit Reached", 
+        description: `You can only create ${MAX_HABITS_PER_DAY} habits per day. Try again tomorrow!`, 
+        variant: "destructive" 
+      });
+      return;
+    }
+
+    // Anti-exploit: Enforce minimum goal days
+    const safeDays = Math.max(MIN_GOAL_DAYS, newHabit.goalDays);
+    const xpValues = calculateHabitXP(safeDays);
+    
     const habit: Habit = {
       id: Date.now().toString(),
       name: newHabit.name,
       icon: newHabit.icon,
       color: newHabit.color,
       completionGrid: {},
-      goalDays: newHabit.goalDays,
+      goalDays: safeDays,
       winXP: xpValues.winXP,
       loseXP: xpValues.loseXP,
       startDate: new Date().toISOString().split("T")[0],
@@ -75,13 +115,16 @@ const Habits = () => {
       status: "active",
     };
 
+    // Increment rate limit counter
+    incrementHabitsCreatedToday();
+
     saveHabits([...habits, habit]);
     setIsDialogOpen(false);
     setNewHabit({
       name: "",
       icon: "🌱",
       color: HABIT_COLORS[0],
-      goalDays: 30,
+      goalDays: MIN_GOAL_DAYS,
     });
 
     toast({
@@ -317,23 +360,24 @@ const Habits = () => {
 
               <div className="space-y-3">
                 <div>
-                  <Label>Goal Days</Label>
+                  <Label>Goal Days (minimum {MIN_GOAL_DAYS})</Label>
                   <Input
                     type="number"
-                    min="1"
+                    min={MIN_GOAL_DAYS}
                     max="365"
                     value={newHabit.goalDays}
-                    onChange={(e) => setNewHabit({ ...newHabit, goalDays: Math.max(1, Math.min(365, parseInt(e.target.value) || 1)) })}
+                    onChange={(e) => setNewHabit({ ...newHabit, goalDays: Math.max(MIN_GOAL_DAYS, Math.min(365, parseInt(e.target.value) || MIN_GOAL_DAYS)) })}
                     className="bg-background border-border"
                   />
                 </div>
                 <div className="p-3 bg-muted/30 rounded-lg border border-border">
-                  <p className="text-xs text-muted-foreground mb-2">XP Stakes (based on {newHabit.goalDays} days)</p>
+                  <p className="text-xs text-muted-foreground mb-2">XP Stakes (based on {Math.max(MIN_GOAL_DAYS, newHabit.goalDays)} days)</p>
                   <div className="flex justify-between text-sm">
-                    <span className="text-neon-cyan">Win: +{calculateHabitXP(newHabit.goalDays).winXP} XP</span>
-                    <span className="text-destructive">Lose: -{calculateHabitXP(newHabit.goalDays).loseXP} XP</span>
+                    <span className="text-neon-cyan">Win: +{calculateHabitXP(Math.max(MIN_GOAL_DAYS, newHabit.goalDays)).winXP} XP</span>
+                    <span className="text-destructive">Lose: -{calculateHabitXP(Math.max(MIN_GOAL_DAYS, newHabit.goalDays)).loseXP} XP</span>
                   </div>
                   <p className="text-xs text-muted-foreground mt-1">Formula: Win = Days × 20, Lose = Days × 10</p>
+                  <p className="text-xs text-yellow-500 mt-1">⚠️ Limit: {MAX_HABITS_PER_DAY} new habits per day</p>
                 </div>
               </div>
 

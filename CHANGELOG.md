@@ -2,6 +2,18 @@
 
 All notable changes to the Solo Leveling System will be documented in this file.
 
+## [3.9.7] - 2025-12-24
+
+### Security
+- **Habits Anti-Exploit Protection**: Added comprehensive protections against console script exploitation:
+  - Minimum 7-day goal requirement for all habits (prevents rapid 1-day habit farming)
+  - Daily creation limit of 5 habits per day (prevents infinite habit loop scripts)
+  - Rate limiting tracked via localStorage with daily reset
+
+### Changed
+- Default habit goal days now set to 7 (minimum) instead of 30
+- Habit creation dialog now shows rate limit warning
+
 ## [3.9.6] - 2025-12-23
 
 ### Fixed
