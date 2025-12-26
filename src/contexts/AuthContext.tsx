@@ -29,66 +29,116 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    // Set up auth state listener FIRST
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (_event, session) => {
-      setSession(session)
-      setUser(session?.user ?? null)
-  
-      // Sync Discord ID on auth state change
-      if (session?.user) {
-        const discordId = session.user.user_metadata?.provider_id;
-    
-        if (discordId) {
-          const { data: profile } = await supabase
-            .from('profiles')
-            .select('discord_id')
-            .eq('user_id', session.user.id)
-            .single();
+    // Check for existing session and link Discord ID
+    supabase.auth.getSession().then(async ({ data: { session } }) => {
+      setSession(session);
+      setUser(session?.user ?? null);
+      setLoading(false);
       
-          if (profile && !profile.discord_id) {
-            await supabase
-              .from('profiles')
-              .update({ discord_id: discordId })
-              .eq('user_id', session.user.id);
-          }
-        }
+      // Link Discord ID if signed in with Discord
+      if (session?.user) {
+        await linkDiscordId(session.user);
       }
     });
 
-
-    // THEN check for existing session
-      supabase.auth.getSession().then(async ({ data: { session } }) => {
-        setSession(session)
-        setUser(session?.user ?? null)
-        setLoading(false)
+    // Listen for auth state changes
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (_event, session) => {
+      console.log('Auth event:', _event);
+      setSession(session);
+      setUser(session?.user ?? null);
       
-        // If logged in with Discord, ensure discord_id is saved
-        if (session?.user) {
-          const discordId = session.user.user_metadata?.provider_id;
-          
-          if (discordId) {
-            // Check if discord_id needs updating
-            const { data: profile } = await supabase
-              .from('profiles')
-              .select('discord_id')
-              .eq('user_id', session.user.id)
-              .single();
-        
-            // Update if missing
-            if (profile && !profile.discord_id) {
-              await supabase
-                .from('profiles')
-                .update({ discord_id: discordId })
-                .eq('user_id', session.user.id);
-              
-              console.log('✅ Discord ID linked:', discordId);
-            }
-          }
-        }
-      });
+      // Link Discord ID on sign in
+      if (session?.user && _event === 'SIGNED_IN') {
+        await linkDiscordId(session.user);
+      }
+    });
 
     return () => subscription.unsubscribe();
   }, []);
+
+  // Helper function to link Discord ID
+  const linkDiscordId = async (user: User) => {
+    try {
+      console.log('Checking Discord linking for user:', user.id);
+      
+      // Try multiple ways to get Discord ID
+      let discordId: string | null = null;
+      
+      // Method 1: Check user_metadata
+      if (user.user_metadata?.provider_id) {
+        discordId = user.user_metadata.provider_id;
+        console.log('Found Discord ID in user_metadata:', discordId);
+      }
+      
+      // Method 2: Check identities
+      if (!discordId) {
+        const { data: identities } = await supabase.auth.getUserIdentities();
+        console.log('User identities:', identities);
+        
+        const discordIdentity = identities?.identities?.find(
+          (identity: any) => identity.provider === 'discord'
+        );
+        
+        if (discordIdentity) {
+          discordId = discordIdentity.identity_data?.provider_id || 
+                     discordIdentity.id ||
+                     discordIdentity.provider_id;
+          console.log('Found Discord ID in identities:', discordId);
+        }
+      }
+      
+      // Method 3: Check app_metadata (some Discord OAuth setups use this)
+      if (!discordId && user.app_metadata?.provider_id) {
+        discordId = user.app_metadata.provider_id;
+        console.log('Found Discord ID in app_metadata:', discordId);
+      }
+      
+      if (!discordId) {
+        console.log('No Discord ID found - user may have signed up with email');
+        return;
+      }
+      
+      // Check if profile exists and needs updating
+      const { data: profile, error: profileError } = await supabase
+        .from('profiles')
+        .select('discord_id')
+        .eq('user_id', user.id)
+        .maybeSingle();
+      
+      if (profileError) {
+        console.error('Error fetching profile:', profileError);
+        return;
+      }
+      
+      if (!profile) {
+        console.log('No profile found - will be created by database trigger');
+        return;
+      }
+      
+      // Update Discord ID if missing or empty
+      if (!profile.discord_id || profile.discord_id === '') {
+        console.log('Updating profile with Discord ID:', discordId);
+        
+        const { error: updateError } = await supabase
+          .from('profiles')
+          .update({ 
+            discord_id: discordId,
+            updated_at: new Date().toISOString()
+          })
+          .eq('user_id', user.id);
+        
+        if (updateError) {
+          console.error('Error updating Discord ID:', updateError);
+        } else {
+          console.log('✅ Discord ID successfully linked!');
+        }
+      } else {
+        console.log('Discord ID already linked:', profile.discord_id);
+      }
+    } catch (error) {
+      console.error('Error in linkDiscordId:', error);
+    }
+  };
 
   const signUp = async (email: string, password: string, hunterName: string) => {
     const redirectUrl = `${window.location.origin}/`;
