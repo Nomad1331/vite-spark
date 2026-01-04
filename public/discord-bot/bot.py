@@ -627,6 +627,9 @@ async def on_message(message):
     
     db.add_xp(message.author.id, message.guild.id, xp_gain)
     
+    # Sync XP to web app (fire-and-forget, non-blocking)
+    asyncio.create_task(db.sync_xp_to_web(str(message.author.id), xp_gain, "discord_message"))
+    
     # Check for level up
     new_data = db.get_user(message.author.id, message.guild.id)
     new_level = level_from_xp(new_data['xp'], message.guild.id)
@@ -682,6 +685,10 @@ async def on_voice_state_update(member, before, after):
             
             old_level = level_from_xp(user_data['xp'], member.guild.id)
             db.add_xp(member.id, member.guild.id, xp_gain)
+            
+            # Sync voice XP to web app
+            asyncio.create_task(db.sync_xp_to_web(str(member.id), xp_gain, "discord_voice"))
+            
             # track voice time (seconds)
             db.add_voice_time(member.id, member.guild.id, int(time_spent))
             
@@ -894,6 +901,10 @@ async def voice_xp_task():
                         xp_gain = int(xp_gain * 1.05)
                     
                     db.add_xp(member.id, guild.id, xp_gain)
+                    
+                    # Sync voice task XP to web app
+                    asyncio.create_task(db.sync_xp_to_web(str(member.id), xp_gain, "discord_voice_task"))
+                    
                     # account for 5 minutes of voice time
                     db.add_voice_time(member.id, guild.id, 5 * 60)
 
@@ -1562,6 +1573,9 @@ async def chooseclass_slash(interaction: discord.Interaction):
         
         # Set class in database
         db.set_user_class(interaction.user.id, interaction.guild.id, chosen_class)
+        
+        # Sync class to web app
+        asyncio.create_task(db.sync_class_to_web(str(interaction.user.id), chosen_class))
         
         # Wait for DB write to complete
         await asyncio.sleep(0.15)
@@ -2397,6 +2411,9 @@ async def daily(ctx):
     success, result = db.claim_daily(ctx.author.id, ctx.guild.id, daily_reward)
     
     if success:
+        # Sync daily XP to web app
+        asyncio.create_task(db.sync_xp_to_web(str(ctx.author.id), result, "discord_daily"))
+        
         await ctx.send(
             f"🎁 **DAILY REWARD**\n"
             f"{ctx.author.mention} claimed **{result:,} XP**!\n"
@@ -2459,6 +2476,9 @@ async def addxp(ctx, member: discord.Member, amount: int):
     old_rank = rank_from_level(old_level)
 
     db.add_xp(member.id, ctx.guild.id, amount)
+    
+    # Sync admin-added XP to web app
+    asyncio.create_task(db.sync_xp_to_web(str(member.id), amount, "discord_admin"))
 
     new_data = db.get_user(member.id, ctx.guild.id)
     new_level = level_from_xp(new_data['xp'], ctx.guild.id)
@@ -3054,6 +3074,9 @@ async def chooseclass(ctx):
         # Set class in database
         db.set_user_class(ctx.author.id, ctx.guild.id, chosen_class)
         
+        # Sync class to web app
+        asyncio.create_task(db.sync_class_to_web(str(ctx.author.id), chosen_class))
+        
         # Wait for DB write to complete
         await asyncio.sleep(0.15)
         
@@ -3242,6 +3265,9 @@ async def claimstored(ctx):
     
     # Award XP
     db.add_xp(ctx.author.id, ctx.guild.id, total_xp)
+    
+    # Sync mage daily XP to web app
+    asyncio.create_task(db.sync_xp_to_web(str(ctx.author.id), total_xp, "discord_mage_daily"))
     
     # Clear stored dailies
     db.use_stored_dailies(ctx.author.id, ctx.guild.id)
