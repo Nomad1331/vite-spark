@@ -117,7 +117,7 @@ export const useCloudSync = () => {
     }
   };
 
-  // Sync cloud data to local storage - only if cloud has more progress
+  // Sync cloud data to local storage - merge cloud with local, preferring cloud for critical data
   const syncCloudToLocal = async (profile: CloudProfile, stats: CloudPlayerStats) => {
     const currentLocalStats = storage.getStats();
     
@@ -135,6 +135,18 @@ export const useCloudSync = () => {
     const resolvedAvatar = isLocalCustomImage 
       ? currentLocalStats.avatar 
       : (profile.avatar || currentLocalStats.avatar || 'default');
+    
+    // CRITICAL: For unlocked items (frames, classes), ALWAYS merge both sources to prevent loss
+    // This ensures purchased frames are never lost due to sync timing issues
+    const mergedUnlockedFrames = [...new Set([
+      ...(stats.unlocked_card_frames || ['default']),
+      ...(currentLocalStats.unlockedCardFrames || ['default']),
+    ])];
+    
+    const mergedUnlockedClasses = [...new Set([
+      ...(stats.unlocked_classes || []),
+      ...(currentLocalStats.unlockedClasses || []),
+    ])];
     
     // Always sync profile data (name, avatar, title) from cloud
     // But for stats, only sync if cloud has more progress
@@ -155,9 +167,10 @@ export const useCloudSync = () => {
       gold: cloudHasMoreProgress ? stats.gold : currentLocalStats.gold,
       gems: cloudHasMoreProgress ? stats.gems : currentLocalStats.gems,
       credits: cloudHasMoreProgress ? stats.credits : currentLocalStats.credits,
+      // Use cloud frame selection, but ALWAYS use merged unlocked frames to prevent loss
       selectedCardFrame: stats.selected_card_frame || currentLocalStats.selectedCardFrame || 'default',
-      unlockedCardFrames: stats.unlocked_card_frames || currentLocalStats.unlockedCardFrames || ['default'],
-      unlockedClasses: stats.unlocked_classes || currentLocalStats.unlockedClasses || [],
+      unlockedCardFrames: mergedUnlockedFrames,
+      unlockedClasses: mergedUnlockedClasses,
       isFirstTime: false,
     };
     

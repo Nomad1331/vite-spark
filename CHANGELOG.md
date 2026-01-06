@@ -2,6 +2,14 @@
 
 All notable changes to the Solo Leveling System will be documented in this file.
 
+## [3.10.1] - 2025-01-06
+
+### Fixed
+- **Card Frame Purchase Sync Bug**: Fixed issue where purchased card frames could appear locked after re-login
+  - Root cause: Cloud sync was overwriting local frames instead of merging both sources
+  - Solution: Now MERGES cloud and local unlocked frames/classes to prevent any loss
+  - Purchased frames and unlocked classes will never be lost due to sync timing issues
+
 ## [3.10.0] - 2025-01-06
 
 ### Added
