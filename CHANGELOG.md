@@ -2,6 +2,43 @@
 
 All notable changes to the Solo Leveling System will be documented in this file.
 
+## [3.13.0] - 2025-01-10
+
+### Changed - Cloud-Only Architecture
+- **Complete Cloud Migration**: All data now lives in the cloud - no more local storage for user data!
+  - Habits, Quests, Gates, Challenges, Streaks - everything syncs from Supabase
+  - Eliminates data inconsistency issues between devices
+  - Same data on all devices, all browsers, always in sync
+  
+- **usePlayerStats Hook**: Now fetches and saves directly to `profiles` and `player_stats` tables
+  - Stats sync in real-time across all sessions
+  - No more localStorage for player stats
+
+- **Gates Page**: Fully cloud-based using `useCloudGates` hook
+  - Gate progress, completion, and failures sync across devices
+  - Auto-unlock based on level syncs properly
+
+- **ChallengesPanel**: Now uses cloud hooks
+  - Daily/Weekly challenges stored in `user_challenges` table
+  - Necromancer legendary challenge progress synced
+  - Challenge claims tracked server-side
+
+- **Discord `/card` Command**: Now shows stats summary with link to web app
+  - Directs users to **sololeveling.app** for full card with custom frames
+  - Shows level, rank, power, stats, and currency in Discord
+  - Use `/xp` for Discord-based rank card image
+
+### Fixed
+- **HabitGoalCard Type Error**: Fixed `onComplete` signature to accept `(habitId, won)` params
+- **Data Inconsistency**: Eliminated local/cloud data mixing causing different data on different devices
+- **Supporter Frames Sync**: Exclusive frames now properly sync when logged in on multiple devices
+
+### Technical
+- Removed all localStorage usage for user game data
+- `useCloudQuests`, `useCloudHabits`, `useCloudGates`, `useCloudStreaks`, `useCloudChallenges` hooks
+- `usePlayerStats` refactored to be fully cloud-based
+- Added `loading` states to all cloud hooks for better UX
+
 ## [3.12.0] - 2025-01-08
 
 ### Added

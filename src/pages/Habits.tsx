@@ -378,8 +378,8 @@ const Habits = () => {
               <HabitGoalCard
                 key={habit.id}
                 habit={habit}
-                onComplete={completeHabit}
-                onDelete={deleteHabit}
+                onComplete={(habitId, won) => completeHabit(habitId, won)}
+                onDelete={(habitId) => deleteHabit(habitId)}
               />
             ))}
           </div>

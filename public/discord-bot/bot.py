@@ -3890,7 +3890,7 @@ async def challenges_slash(interaction: discord.Interaction):
     
     await interaction.followup.send(embed=embed)
 
-@bot.tree.command(name="card", description="Generate your Hunter stats card image")
+@bot.tree.command(name="card", description="View your Hunter stats card")
 async def card_slash(interaction: discord.Interaction):
     if not await defer_interaction(interaction):
         return
@@ -3909,63 +3909,48 @@ async def card_slash(interaction: discord.Interaction):
             await interaction.followup.send(f"❌ Error: {error}")
         return
     
-    # Get web app data for card generation
+    # Get web app data
     hunter_name = result.get('hunter_name', 'Hunter')[:20]
     level = result.get('level', 1)
     rank = result.get('rank', 'E-Rank')
-    total_xp = result.get('total_xp', 0)
+    title = result.get('title', 'Awakened Hunter')
+    power = result.get('power', 50)
+    stats = result.get('stats', {})
     
-    # Calculate XP progress (web app formula: level * 100)
-    if level <= 1:
-        current_level_xp = total_xp
-        next_level_xp = 100 if level == 0 else 200
-    else:
-        xp_at_current_level = sum(l * 100 for l in range(1, level + 1))
-        next_level_xp = (level + 1) * 100
-        current_level_xp = total_xp - xp_at_current_level
-        if current_level_xp < 0:
-            current_level_xp = 0
+    # Create a nice embed directing users to the web app for the full card
+    embed = discord.Embed(
+        title=f"🎴 {hunter_name.upper()}'s Hunter Card",
+        description=(
+            f"*{title}*\n\n"
+            f"**📊 Level {level}** • **{rank}** • **⚡ {power} Power**\n\n"
+            "🌐 **View your full stats card with custom frames at:**\n"
+            "👉 **sololeveling.app** → Click **Share Stats** or **Download 4K Card**\n\n"
+            "*The web app card includes your equipped frame, avatar, and full visual design!*"
+        ),
+        color=0x7c3aed
+    )
     
-    # Generate the card image
-    try:
-        avatar_url = interaction.user.avatar.url if interaction.user.avatar else interaction.user.default_avatar.url
-        
-        card_path = create_rank_card(
-            username=hunter_name,
-            avatar_url=avatar_url,
-            level=level,
-            rank_name=rank,
-            server_rank=1,  # Web app user
-            current_xp=current_level_xp,
-            needed_xp=next_level_xp,
-            total_xp=total_xp
-        )
-        
-        if card_path:
-            # Create embed with stats summary
-            power = result.get('power', 50)
-            stats = result.get('stats', {})
-            
-            embed = discord.Embed(
-                title=f"🎴 {hunter_name.upper()}'s Hunter Card",
-                description=f"*{result.get('title', 'Awakened Hunter')}*",
-                color=0x7c3aed
-            )
-            embed.add_field(name="⚡ Power", value=f"**{power}**", inline=True)
-            embed.add_field(name="💰 Gold", value=f"**{result.get('gold', 0):,}**", inline=True)
-            embed.add_field(name="💎 Gems", value=f"**{result.get('gems', 0):,}**", inline=True)
-            
-            stats_text = (
-                f"💪 STR: {stats.get('strength', 10)} | "
-                f"⚡ AGI: {stats.get('agility', 10)} | "
-                f"🧠 INT: {stats.get('intelligence', 10)} | "
-                f"❤️ VIT: {stats.get('vitality', 10)} | "
-                f"👁️ SEN: {stats.get('sense', 10)}"
-            )
-            embed.add_field(name="📊 Stats", value=stats_text, inline=False)
-            embed.set_footer(text="\"I am a Hunter chosen by The System\"")
-            
-            await interaction.followup.send(embed=embed, file=discord.File(card_path))
+    # Add stats breakdown
+    stats_text = (
+        f"💪 STR: **{stats.get('strength', 10)}** | "
+        f"⚡ AGI: **{stats.get('agility', 10)}** | "
+        f"🧠 INT: **{stats.get('intelligence', 10)}** | "
+        f"❤️ VIT: **{stats.get('vitality', 10)}** | "
+        f"👁️ SEN: **{stats.get('sense', 10)}**"
+    )
+    embed.add_field(name="📈 Attributes", value=stats_text, inline=False)
+    
+    # Add currency
+    currency_text = (
+        f"💰 Gold: **{result.get('gold', 0):,}** | "
+        f"💎 Gems: **{result.get('gems', 0):,}** | "
+        f"🎫 Credits: **{result.get('credits', 0):,}**"
+    )
+    embed.add_field(name="💵 Currency", value=currency_text, inline=False)
+    
+    embed.set_footer(text="\"I am a Hunter chosen by The System\" | Use /xp for Discord-based rank card")
+    
+    await interaction.followup.send(embed=embed)
             
             # Clean up temp file
             try:

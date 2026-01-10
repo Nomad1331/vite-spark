@@ -1,118 +1,15 @@
-import { useState, useEffect } from "react";
+import { useEffect } from "react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Checkbox } from "@/components/ui/checkbox";
-import { storage, Gate } from "@/lib/storage";
 import { usePlayerStats } from "@/hooks/usePlayerStats";
+import { useCloudGates } from "@/hooks/useCloudGates";
+import { useCloudQuests } from "@/hooks/useCloudQuests";
+import { useCloudHabits } from "@/hooks/useCloudHabits";
+import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "@/hooks/use-toast";
-import { Skull, Lock, Trophy, Flame, AlertTriangle } from "lucide-react";
+import { Skull, Lock, Trophy, Flame, AlertTriangle, Loader2 } from "lucide-react";
 
-const DEFAULT_GATES: Gate[] = [
-  {
-    id: "1",
-    name: "Goblin Cave",
-    rank: "E-Rank",
-    description: "A beginner's trial. Face the Goblin Chieftain.",
-    loreText: "Even E-Rank gates can be deadly for the unprepared. Goblins are weak individually, but lethal in groups.",
-    dailyChallenge: "Complete all daily quests",
-    requiredDays: 7,
-    requiredHabits: 0,
-    progress: {},
-    losses: 0,
-    startDate: null,
-    endDate: null,
-    status: "active",
-    rewards: { xp: 500, gold: 100, title: "Goblin Slayer" },
-    unlockRequirement: { level: 1 },
-  },
-  {
-    id: "2",
-    name: "Shadow Dungeon",
-    rank: "D-Rank",
-    description: "Darkness awaits. Defeat the Shadow Beast.",
-    loreText: "The System has detected a D-Rank gate. Shadows move in ways they shouldn't. Something dangerous lurks within.",
-    dailyChallenge: "Complete all quests + 1 habit daily",
-    requiredDays: 7,
-    requiredHabits: 1,
-    progress: {},
-    losses: 0,
-    startDate: null,
-    endDate: null,
-    status: "locked",
-    rewards: { xp: 800, gold: 200, title: "Shadow Walker" },
-    unlockRequirement: { level: 6 },
-  },
-  {
-    id: "3",
-    name: "Temple of Chaos",
-    rank: "C-Rank",
-    description: "Ancient evil stirs. Challenge the Chaos Knight.",
-    loreText: "⚠️ WARNING: C-Rank threat detected. 10-day endurance trial. Only the disciplined survive.",
-    dailyChallenge: "Complete all quests + 2 habits daily for 10 days",
-    requiredDays: 10,
-    requiredHabits: 2,
-    progress: {},
-    losses: 0,
-    startDate: null,
-    endDate: null,
-    status: "locked",
-    rewards: { xp: 1500, gold: 400, title: "Chaos Breaker" },
-    unlockRequirement: { level: 10 },
-  },
-  {
-    id: "4",
-    name: "Frozen Citadel",
-    rank: "B-Rank",
-    description: "Eternal winter reigns. Face the Ice Monarch.",
-    loreText: "⚠️⚠️ SYSTEM ALERT: B-Rank gate emergence. 10-day trial of absolute discipline required.",
-    dailyChallenge: "Complete all quests + 3 habits daily for 10 days",
-    requiredDays: 10,
-    requiredHabits: 3,
-    progress: {},
-    losses: 0,
-    startDate: null,
-    endDate: null,
-    status: "locked",
-    rewards: { xp: 3000, gold: 800, title: "Frostborn" },
-    unlockRequirement: { level: 25 },
-  },
-  {
-    id: "5",
-    name: "Dragon's Lair",
-    rank: "A-Rank",
-    description: "The apex predator awakens. Challenge the Red Dragon.",
-    loreText: "🔥 EMERGENCY ALERT: A-Rank Dragon Gate. 12-day trial of supreme dedication. Only legends prevail.",
-    dailyChallenge: "Complete all quests + 4 habits daily for 12 days",
-    requiredDays: 12,
-    requiredHabits: 4,
-    progress: {},
-    losses: 0,
-    startDate: null,
-    endDate: null,
-    status: "locked",
-    rewards: { xp: 5000, gold: 1500, title: "Dragonslayer" },
-    unlockRequirement: { level: 50 },
-  },
-  {
-    id: "6",
-    name: "Monarch's Domain",
-    rank: "S-Rank",
-    description: "The final trial. Confront the Shadow Monarch.",
-    loreText: "⚫ NATIONAL EMERGENCY: S-Rank Gate. 14-day ultimate trial. Only those who have transcended humanity may enter.",
-    dailyChallenge: "Complete all quests + 5 habits daily for 14 days",
-    requiredDays: 14,
-    requiredHabits: 5,
-    progress: {},
-    losses: 0,
-    startDate: null,
-    endDate: null,
-    status: "locked",
-    rewards: { xp: 10000, gold: 5000, title: "Shadow Monarch" },
-    unlockRequirement: { level: 100 },
-  },
-];
-
-const RANK_COLORS = {
+const RANK_COLORS: Record<string, string> = {
   "E-Rank": "text-gray-400 border-gray-400/50",
   "D-Rank": "text-green-400 border-green-400/50",
   "C-Rank": "text-blue-400 border-blue-400/50",
@@ -121,7 +18,7 @@ const RANK_COLORS = {
   "S-Rank": "text-red-400 border-red-400/50",
 };
 
-const RANK_GLOW = {
+const RANK_GLOW: Record<string, string> = {
   "E-Rank": "shadow-[0_0_20px_rgba(156,163,175,0.3)]",
   "D-Rank": "shadow-[0_0_20px_rgba(74,222,128,0.3)]",
   "C-Rank": "shadow-[0_0_20px_rgba(96,165,250,0.3)]",
@@ -131,86 +28,67 @@ const RANK_GLOW = {
 };
 
 const Gates = () => {
+  const { user } = useAuth();
   const { stats, addXP, addGold, applyGatePenalty } = usePlayerStats();
-  const [hasMounted, setHasMounted] = useState(false);
-  const [gates, setGates] = useState<Gate[]>(() => {
-    const stored = storage.getGates();
-    if (stored.length === 0) {
-      storage.setGates(DEFAULT_GATES);
-      return DEFAULT_GATES;
-    }
-    return stored;
-  });
-
-  // Mark as mounted after first render to prevent overwriting imported data
-  useEffect(() => {
-    setHasMounted(true);
-  }, []);
-
-  // Only save to localStorage after component has mounted and gates change
-  useEffect(() => {
-    if (hasMounted) {
-      storage.setGates(gates);
-    }
-  }, [gates, hasMounted]);
+  const { gates, loading, checkUnlocks, enterGate, markDayComplete, completeGate, failGate, rechallengeGate, updateGates } = useCloudGates();
+  const { quests } = useCloudQuests();
+  const { habits } = useCloudHabits();
 
   // Check gate unlock status based on player level
   useEffect(() => {
-    setGates((prev) =>
-      prev.map((gate) => {
-        if (gate.status === "locked" && gate.unlockRequirement.level) {
-          if (stats.level >= gate.unlockRequirement.level) {
-            return { ...gate, status: "active" as const };
-          }
-        }
-        return gate;
-      })
-    );
-  }, [stats.level]);
+    if (stats.level > 0) {
+      checkUnlocks(stats.level);
+    }
+  }, [stats.level, checkUnlocks]);
 
   // Auto-check daily challenge completion for active gates
   useEffect(() => {
-    const today = new Date().toISOString().split("T")[0];
-    const quests = storage.getQuests();
-    const habits = storage.getHabits();
+    if (gates.length === 0) return;
     
-    setGates((prev) =>
-      prev.map((gate) => {
-        // Only auto-check for gates that are started and haven't completed today
-        if (gate.startDate && gate.status === "active" && !gate.progress[today]) {
-          // Check if all quests are completed
-          const allQuestsComplete = quests.length > 0 && quests.every(q => q.completed);
+    const today = new Date().toISOString().split("T")[0];
+    
+    const updatedGates = gates.map((gate) => {
+      // Only auto-check for gates that are started and haven't completed today
+      if (gate.startDate && gate.status === "active" && !gate.progress[today]) {
+        // Check if all quests are completed
+        const allQuestsComplete = quests.length > 0 && quests.every(q => q.completed);
+        
+        // Check habits requirement based on gate's requiredHabits
+        const activeHabits = habits.filter(h => h.status === "active");
+        const completedHabitsToday = activeHabits.filter(h => h.completionGrid[today]).length;
+        
+        // Gate requires: all quests complete + at least requiredHabits habits completed
+        const habitsRequirementMet = gate.requiredHabits === 0 || 
+          (activeHabits.length >= gate.requiredHabits && completedHabitsToday >= gate.requiredHabits);
+        
+        const challengeMet = allQuestsComplete && habitsRequirementMet;
+        
+        if (challengeMet) {
+          const newProgress = { ...gate.progress, [today]: true };
+          const completedDays = Object.values(newProgress).filter(Boolean).length;
           
-          // Check habits requirement based on gate's requiredHabits
-          const activeHabits = habits.filter(h => h.status === "active");
-          const completedHabitsToday = activeHabits.filter(h => h.completionGrid[today]).length;
-          
-          // Gate requires: all quests complete + at least requiredHabits habits completed
-          const habitsRequirementMet = gate.requiredHabits === 0 || 
-            (activeHabits.length >= gate.requiredHabits && completedHabitsToday >= gate.requiredHabits);
-          
-          const challengeMet = allQuestsComplete && habitsRequirementMet;
-          
-          if (challengeMet) {
-            const newProgress = { ...gate.progress, [today]: true };
-            const completedDays = Object.values(newProgress).filter(Boolean).length;
-            
-            // Auto-complete gate if all required days are done
-            if (completedDays === gate.requiredDays) {
-              setTimeout(() => {
-                completeGate(gate.id);
-              }, 100);
-            }
-            
-            return { ...gate, progress: newProgress };
+          // Auto-complete gate if all required days are done
+          if (completedDays === gate.requiredDays) {
+            setTimeout(() => handleCompleteGate(gate.id), 100);
           }
+          
+          return { ...gate, progress: newProgress };
         }
-        return gate;
-      })
+      }
+      return gate;
+    });
+    
+    // Check if any gates were updated
+    const changed = updatedGates.some((g, i) => 
+      JSON.stringify(g.progress) !== JSON.stringify(gates[i].progress)
     );
-  }, [stats]); // Re-check whenever stats update (quest completion, etc.)
+    
+    if (changed) {
+      updateGates(updatedGates);
+    }
+  }, [quests, habits, gates.length]);
 
-  const enterGate = (gateId: string) => {
+  const handleEnterGate = async (gateId: string) => {
     const gate = gates.find((g) => g.id === gateId);
     if (!gate) return;
 
@@ -237,69 +115,16 @@ const Gates = () => {
       return;
     }
 
-    // Start the gate
-    const today = new Date().toISOString().split("T")[0];
-    setGates((prev) =>
-      prev.map((g) =>
-        g.id === gateId
-          ? {
-              ...g,
-              startDate: today,
-              endDate: null,
-              progress: { [today]: false },
-            }
-          : g
-      )
-    );
+    await enterGate(gateId);
     toast({
       title: "⚔️ GATE ENTERED",
       description: `Your ${gate.requiredDays}-day challenge has begun! Complete your daily challenge to progress.`,
     });
   };
 
-  const markDayComplete = (gateId: string) => {
-    const today = new Date().toISOString().split("T")[0];
-    const gate = gates.find((g) => g.id === gateId);
-    if (!gate || gate.progress[today] === true) return;
-
-    setGates((prev) =>
-      prev.map((g) =>
-        g.id === gateId
-          ? {
-              ...g,
-              progress: { ...g.progress, [today]: true },
-            }
-          : g
-      )
-    );
-
-    const completedDays = Object.values({ ...gate.progress, [today]: true }).filter(Boolean).length;
-
-    if (completedDays === gate.requiredDays) {
-      completeGate(gateId);
-    } else {
-      toast({
-        title: "✅ Day Complete",
-        description: `${completedDays}/${gate.requiredDays} days completed`,
-      });
-    }
-  };
-
-  const completeGate = (gateId: string) => {
-    const gate = gates.find((g) => g.id === gateId);
+  const handleCompleteGate = async (gateId: string) => {
+    const gate = await completeGate(gateId);
     if (!gate) return;
-
-    setGates((prev) =>
-      prev.map((g) =>
-        g.id === gateId
-          ? {
-              ...g,
-              status: "completed" as const,
-              endDate: new Date().toISOString().split("T")[0],
-            }
-          : g
-      )
-    );
 
     addXP(gate.rewards.xp, {
       type: "gate",
@@ -314,23 +139,9 @@ const Gates = () => {
     });
   };
 
-  const failGate = (gateId: string) => {
-    const gate = gates.find((g) => g.id === gateId);
+  const handleFailGate = async (gateId: string) => {
+    const gate = await failGate(gateId);
     if (!gate) return;
-
-    setGates((prev) =>
-      prev.map((g) =>
-        g.id === gateId
-          ? {
-              ...g,
-              status: "failed" as const,
-              losses: g.losses + 1,
-              endDate: new Date().toISOString().split("T")[0],
-              progress: {},
-            }
-          : g
-      )
-    );
 
     // Apply harsh penalties after updating gate state
     setTimeout(() => {
@@ -345,25 +156,31 @@ const Gates = () => {
     }, 100);
   };
 
-  const rechallenge = (gateId: string) => {
-    setGates((prev) =>
-      prev.map((g) =>
-        g.id === gateId
-          ? {
-              ...g,
-              status: "active" as const,
-              startDate: null,
-              endDate: null,
-              progress: {},
-            }
-          : g
-      )
-    );
+  const handleRechallenge = async (gateId: string) => {
+    await rechallengeGate(gateId);
   };
 
-  const getDaysCompleted = (gate: Gate) => {
+  const getDaysCompleted = (gate: typeof gates[0]) => {
     return Object.values(gate.progress).filter(Boolean).length;
   };
+
+  if (!user) {
+    return (
+      <div className="container mx-auto px-4 py-8 pt-24 text-center">
+        <h1 className="text-2xl font-bold text-primary mb-4">Please Sign In</h1>
+        <p className="text-muted-foreground">You need to be signed in to view Gates.</p>
+      </div>
+    );
+  }
+
+  if (loading) {
+    return (
+      <div className="container mx-auto px-4 py-8 pt-24 flex items-center justify-center">
+        <Loader2 className="w-8 h-8 animate-spin text-primary" />
+        <span className="ml-2 text-muted-foreground">Loading gates...</span>
+      </div>
+    );
+  }
 
   return (
     <div className="container mx-auto px-4 py-8 pt-24">
@@ -426,14 +243,14 @@ const Gates = () => {
                   ) : isCompleted ? (
                     <Trophy className="w-8 h-8 text-primary" />
                   ) : (
-                    <Skull className={`w-8 h-8 ${RANK_COLORS[gate.rank].split(" ")[0]}`} />
+                    <Skull className={`w-8 h-8 ${RANK_COLORS[gate.rank]?.split(" ")[0] || "text-gray-400"}`} />
                   )}
                   <div>
                     <h3 className={`text-xl font-bold font-cinzel ${isLocked ? "text-muted-foreground" : "text-foreground"}`}>
                       {gate.name}
                     </h3>
                     <span
-                      className={`text-sm font-bold px-2 py-0.5 rounded border ${RANK_COLORS[gate.rank]}`}
+                      className={`text-sm font-bold px-2 py-0.5 rounded border ${RANK_COLORS[gate.rank] || "text-gray-400 border-gray-400/50"}`}
                     >
                       {gate.rank}
                     </span>
@@ -517,7 +334,7 @@ const Gates = () => {
 
                 {isActive && !hasStarted && (
                   <Button
-                    onClick={() => enterGate(gate.id)}
+                    onClick={() => handleEnterGate(gate.id)}
                     className="w-full bg-gradient-to-r from-destructive to-destructive/70 hover:from-destructive/80 hover:to-destructive/60"
                   >
                     <Flame className="w-4 h-4 mr-2" />
@@ -526,7 +343,7 @@ const Gates = () => {
                 )}
 
                 {hasStarted && !isCompleted && !isFailed && (
-                  <Button onClick={() => failGate(gate.id)} variant="destructive" className="w-full">
+                  <Button onClick={() => handleFailGate(gate.id)} variant="destructive" className="w-full">
                     Abandon Gate (Harsh Penalty)
                   </Button>
                 )}
@@ -540,7 +357,7 @@ const Gates = () => {
 
                 {isFailed && (
                   <Button
-                    onClick={() => rechallenge(gate.id)}
+                    onClick={() => handleRechallenge(gate.id)}
                     className="w-full bg-gradient-to-r from-destructive to-destructive/70"
                   >
                     Rechallenge

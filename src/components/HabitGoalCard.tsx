@@ -1,15 +1,15 @@
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Flame, Trophy, Skull } from "lucide-react";
+import { Flame, Trophy, Skull, Trash2 } from "lucide-react";
 import { Habit } from "@/lib/storage";
 
 interface HabitGoalCardProps {
   habit: Habit;
-  onComplete?: () => void;
-  onLose?: () => void;
+  onComplete?: (habitId: string, won: boolean) => void;
+  onDelete?: (habitId: string) => void;
 }
 
-const HabitGoalCard = ({ habit, onComplete, onLose }: HabitGoalCardProps) => {
+const HabitGoalCard = ({ habit, onComplete, onDelete }: HabitGoalCardProps) => {
   const now = new Date();
   const start = new Date(habit.startDate);
   const daysElapsed = Math.floor((now.getTime() - start.getTime()) / (1000 * 60 * 60 * 24)) + 1; // +1 to include today
@@ -41,7 +41,19 @@ const HabitGoalCard = ({ habit, onComplete, onLose }: HabitGoalCardProps) => {
           <span className="text-2xl">{habit.icon}</span>
           <h3 className="font-orbitron text-sm font-bold">{habit.name}</h3>
         </div>
-        <div className={getStatusColor()}>{getStatusIcon()}</div>
+        <div className="flex items-center gap-2">
+          <div className={getStatusColor()}>{getStatusIcon()}</div>
+          {onDelete && (
+            <Button
+              size="sm"
+              variant="ghost"
+              onClick={() => onDelete(habit.id)}
+              className="text-destructive hover:text-destructive hover:bg-destructive/10 h-6 w-6 p-0"
+            >
+              <Trash2 className="h-4 w-4" />
+            </Button>
+          )}
+        </div>
       </div>
 
       <div className="space-y-2 text-sm">
@@ -78,16 +90,16 @@ const HabitGoalCard = ({ habit, onComplete, onLose }: HabitGoalCardProps) => {
               </div>
             </div>
 
-            {isPeriodComplete && (
+            {isPeriodComplete && onComplete && (
               <div className="space-y-2">
                 <p className="text-xs text-muted-foreground text-center">
-                  Manual override (auto-detection at {(completionRate * 100).toFixed(0)}%)
+                  Manual override (auto-detection at {completionRate.toFixed(0)}%)
                 </p>
                 <div className="flex gap-2">
                   <Button
                     size="sm"
                     className="flex-1 bg-neon-cyan text-background hover:bg-neon-cyan/80"
-                    onClick={onComplete}
+                    onClick={() => onComplete(habit.id, true)}
                   >
                     Won ✓
                   </Button>
@@ -95,7 +107,7 @@ const HabitGoalCard = ({ habit, onComplete, onLose }: HabitGoalCardProps) => {
                     size="sm"
                     variant="destructive"
                     className="flex-1"
-                    onClick={onLose}
+                    onClick={() => onComplete(habit.id, false)}
                   >
                     Lost ✗
                   </Button>

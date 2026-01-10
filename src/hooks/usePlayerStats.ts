@@ -1,5 +1,7 @@
 import { useState, useEffect, useCallback } from "react";
-import { storage, PlayerStats, calculateTotalXPForLevel, calculateXPForNextLevel } from "@/lib/storage";
+import { PlayerStats, calculateTotalXPForLevel, calculateXPForNextLevel } from "@/lib/storage";
+import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "@/hooks/use-toast";
 import { emitRankUp } from "@/components/RankUpAnimation";
 
@@ -19,69 +21,170 @@ const emitLevelUp = (level: number, pointsEarned: number) => {
   levelUpListeners.forEach(listener => listener(level, pointsEarned));
 };
 
-// Event emitter for stats changes (for cloud sync)
-type StatsChangeListener = (stats: PlayerStats) => void;
-const statsChangeListeners: StatsChangeListener[] = [];
-
-export const onStatsChange = (listener: StatsChangeListener) => {
-  statsChangeListeners.push(listener);
-  return () => {
-    const index = statsChangeListeners.indexOf(listener);
-    if (index > -1) statsChangeListeners.splice(index, 1);
-  };
+const DEFAULT_STATS: PlayerStats = {
+  level: 1,
+  xp: 0,
+  totalXP: 0,
+  rank: "E-Rank",
+  strength: 10,
+  agility: 10,
+  intelligence: 10,
+  vitality: 10,
+  sense: 10,
+  availablePoints: 0,
+  gold: 0,
+  gems: 0,
+  credits: 0,
+  name: "Hunter",
+  title: "Awakened Hunter",
+  avatar: "",
+  selectedCardFrame: "default",
+  unlockedCardFrames: ["default"],
+  unlockedClasses: [],
+  isFirstTime: true,
 };
-
-const emitStatsChange = (stats: PlayerStats) => {
-  statsChangeListeners.forEach(listener => listener(stats));
+  isFirstTime: true,
 };
 
 export const usePlayerStats = () => {
-  const [stats, setStats] = useState<PlayerStats>(() => storage.getStats());
-  const [hasMounted, setHasMounted] = useState(false);
+  const { user } = useAuth();
+  const [stats, setStats] = useState<PlayerStats>(DEFAULT_STATS);
+  const [loading, setLoading] = useState(true);
+  const [initialized, setInitialized] = useState(false);
 
-  // Mark as mounted after first render to prevent overwriting imported data
-  useEffect(() => {
-    setHasMounted(true);
-  }, []);
-
-  // Only save to localStorage after the component has mounted and stats change
-  useEffect(() => {
-    if (hasMounted) {
-      storage.setStats(stats);
-      // Emit stats change for cloud sync
-      emitStatsChange(stats);
+  // Fetch stats from cloud
+  const fetchStats = useCallback(async () => {
+    if (!user) {
+      setStats(DEFAULT_STATS);
+      setLoading(false);
+      return;
     }
-  }, [stats, hasMounted]);
+
+    try {
+      // Fetch profile and player_stats together
+      const [profileResult, statsResult] = await Promise.all([
+        supabase.from('profiles').select('*').eq('user_id', user.id).maybeSingle(),
+        supabase.from('player_stats').select('*').eq('user_id', user.id).maybeSingle(),
+      ]);
+
+      if (profileResult.error) throw profileResult.error;
+      if (statsResult.error) throw statsResult.error;
+
+      const profile = profileResult.data;
+      const cloudStats = statsResult.data;
+
+      if (cloudStats && profile) {
+        setStats({
+          level: cloudStats.level,
+          xp: cloudStats.total_xp - calculateTotalXPForLevel(cloudStats.level),
+          totalXP: cloudStats.total_xp,
+          rank: cloudStats.rank,
+          strength: cloudStats.strength,
+          agility: cloudStats.agility,
+          intelligence: cloudStats.intelligence,
+          vitality: cloudStats.vitality,
+          sense: cloudStats.sense,
+          availablePoints: cloudStats.available_points,
+          gold: cloudStats.gold,
+          gems: cloudStats.gems,
+          credits: cloudStats.credits,
+          name: profile.hunter_name || "Hunter",
+          title: profile.title || "Awakened Hunter",
+          avatar: profile.avatar || "",
+          selectedCardFrame: cloudStats.selected_card_frame || "default",
+          unlockedCardFrames: cloudStats.unlocked_card_frames || ["default"],
+          unlockedClasses: cloudStats.unlocked_classes || [],
+          isFirstTime: false,
+        });
+      } else {
+        // Create initial records
+        setStats(DEFAULT_STATS);
+      }
+      setInitialized(true);
+    } catch (error) {
+      console.error('Error fetching player stats:', error);
+      setStats(DEFAULT_STATS);
+    } finally {
+      setLoading(false);
+    }
+  }, [user]);
+
+  // Save stats to cloud
+  const saveStats = useCallback(async (newStats: PlayerStats) => {
+    if (!user) return false;
+
+    try {
+      // Update player_stats
+      const { error: statsError } = await supabase
+        .from('player_stats')
+        .update({
+          level: newStats.level,
+          total_xp: newStats.totalXP,
+          rank: newStats.rank,
+          strength: newStats.strength,
+          agility: newStats.agility,
+          intelligence: newStats.intelligence,
+          vitality: newStats.vitality,
+          sense: newStats.sense,
+          available_points: newStats.availablePoints,
+          gold: newStats.gold,
+          gems: newStats.gems,
+          credits: newStats.credits,
+          selected_card_frame: newStats.selectedCardFrame,
+          unlocked_card_frames: newStats.unlockedCardFrames,
+          unlocked_classes: newStats.unlockedClasses,
+          updated_at: new Date().toISOString(),
+        })
+        .eq('user_id', user.id);
+
+      if (statsError) throw statsError;
+
+      // Update profile
+      const { error: profileError } = await supabase
+        .from('profiles')
+        .update({
+          hunter_name: newStats.name,
+          title: newStats.title,
+          avatar: newStats.avatar,
+          updated_at: new Date().toISOString(),
+        })
+        .eq('user_id', user.id);
+
+      if (profileError) throw profileError;
+
+      return true;
+    } catch (error) {
+      console.error('Error saving player stats:', error);
+      return false;
+    }
+  }, [user]);
+
+  // Initial fetch
+  useEffect(() => {
+    fetchStats();
+  }, [fetchStats]);
 
   // Get active XP boost multiplier
   const getActiveBoostMultiplier = useCallback((): number => {
-    const stored = localStorage.getItem("soloLevelingActiveBoost");
-    if (!stored) return 1;
-    
-    try {
-      const boost = JSON.parse(stored);
-      if (!boost || !boost.expiresAt) return 1;
-      
-      // Check if expired
-      if (new Date(boost.expiresAt) < new Date()) {
-        localStorage.removeItem("soloLevelingActiveBoost");
-        return 1;
-      }
-      
-      return boost.multiplier || 1;
-    } catch {
-      return 1;
-    }
+    // TODO: Implement cloud-based XP boosts
+    return 1;
   }, []);
 
-  const addXP = (amount: number, source?: { type: "quest" | "habit" | "gate" | "streak" | "other"; description: string }) => {
-    // Apply XP boost multiplier (only for positive XP gains)
+  const getRank = (level: number): string => {
+    if (level >= 100) return "S-Rank";
+    if (level >= 75) return "A-Rank";
+    if (level >= 50) return "B-Rank";
+    if (level >= 25) return "C-Rank";
+    if (level >= 6) return "D-Rank";
+    return "E-Rank";
+  };
+
+  const addXP = useCallback(async (amount: number, source?: { type: "quest" | "habit" | "gate" | "streak" | "other"; description: string }) => {
     const boostMultiplier = amount > 0 ? getActiveBoostMultiplier() : 1;
     const boostedAmount = Math.round(amount * boostMultiplier);
     
     setStats((prev) => {
       const oldLevel = prev.level;
-      const oldTotalXP = prev.totalXP;
       let newTotalXP = prev.totalXP + boostedAmount;
       let newLevel = prev.level;
       let newPoints = prev.availablePoints;
@@ -109,21 +212,6 @@ export const usePlayerStats = () => {
         });
       }
 
-      // Log XP history (show boosted amount)
-      if (source) {
-        const boostNote = boostMultiplier > 1 ? ` (${boostMultiplier}x boosted!)` : "";
-        storage.addXPHistoryEntry({
-          source: source.type,
-          amount: boostedAmount,
-          description: source.description + boostNote,
-          levelsGained,
-          oldLevel,
-          newLevel,
-          oldTotalXP,
-          newTotalXP,
-        });
-      }
-
       const newRank = getRank(newLevel);
       const oldRank = prev.rank;
       
@@ -132,7 +220,7 @@ export const usePlayerStats = () => {
         setTimeout(() => emitRankUp(oldRank, newRank), 500);
       }
 
-      return {
+      const newStats = {
         ...prev,
         xp: newTotalXP - calculateTotalXPForLevel(newLevel),
         totalXP: newTotalXP,
@@ -140,139 +228,152 @@ export const usePlayerStats = () => {
         availablePoints: newPoints,
         rank: newRank,
       };
+
+      // Save to cloud in background
+      saveStats(newStats);
+
+      return newStats;
     });
-  };
+  }, [getActiveBoostMultiplier, saveStats]);
 
-  const addGold = (amount: number) => {
-    setStats((prev) => ({ ...prev, gold: Math.max(0, prev.gold + amount) }));
-  };
+  const addGold = useCallback(async (amount: number) => {
+    setStats((prev) => {
+      const newStats = { ...prev, gold: Math.max(0, prev.gold + amount) };
+      saveStats(newStats);
+      return newStats;
+    });
+  }, [saveStats]);
 
-  const addGems = (amount: number) => {
-    setStats((prev) => ({ ...prev, gems: Math.max(0, (prev.gems || 0) + amount) }));
-  };
+  const addGems = useCallback(async (amount: number) => {
+    setStats((prev) => {
+      const newStats = { ...prev, gems: Math.max(0, (prev.gems || 0) + amount) };
+      saveStats(newStats);
+      return newStats;
+    });
+  }, [saveStats]);
 
-  const spendGems = (amount: number): boolean => {
+  const spendGems = useCallback((amount: number): boolean => {
     if ((stats.gems || 0) >= amount) {
-      setStats((prev) => ({ ...prev, gems: (prev.gems || 0) - amount }));
+      setStats((prev) => {
+        const newStats = { ...prev, gems: (prev.gems || 0) - amount };
+        saveStats(newStats);
+        return newStats;
+      });
       return true;
     }
     return false;
-  };
+  }, [stats.gems, saveStats]);
 
-  const addCredits = (amount: number) => {
-    setStats((prev) => ({ ...prev, credits: Math.max(0, prev.credits + amount) }));
-  };
+  const addCredits = useCallback(async (amount: number) => {
+    setStats((prev) => {
+      const newStats = { ...prev, credits: Math.max(0, prev.credits + amount) };
+      saveStats(newStats);
+      return newStats;
+    });
+  }, [saveStats]);
 
-  const spendCredits = (amount: number): boolean => {
+  const spendCredits = useCallback((amount: number): boolean => {
     if (stats.credits >= amount) {
-      setStats((prev) => ({ ...prev, credits: prev.credits - amount }));
+      setStats((prev) => {
+        const newStats = { ...prev, credits: prev.credits - amount };
+        saveStats(newStats);
+        return newStats;
+      });
       return true;
     }
     return false;
-  };
+  }, [stats.credits, saveStats]);
 
-  // Updated unlockCardFrame to return the new stats for immediate cloud sync
-  const unlockCardFrame = (frameId: string, cost: number): { success: boolean; newStats: PlayerStats | null } => {
+  const unlockCardFrame = useCallback((frameId: string, cost: number): { success: boolean; newStats: PlayerStats | null } => {
     if (stats.credits >= cost && !stats.unlockedCardFrames?.includes(frameId)) {
-      const newStats = {
+      const newStats: PlayerStats = {
         ...stats,
         credits: stats.credits - cost,
         unlockedCardFrames: [...(stats.unlockedCardFrames || ["default"]), frameId],
       };
       setStats(newStats);
+      saveStats(newStats);
       return { success: true, newStats };
     }
     return { success: false, newStats: null };
-  };
+  }, [stats, saveStats]);
 
-  const unlockClass = (classId: string) => {
+  const unlockClass = useCallback((classId: string) => {
     if (!stats.unlockedClasses?.includes(classId)) {
-      setStats((prev) => ({
-        ...prev,
-        unlockedClasses: [...(prev.unlockedClasses || []), classId],
-      }));
+      setStats((prev) => {
+        const newStats = {
+          ...prev,
+          unlockedClasses: [...(prev.unlockedClasses || []), classId],
+        };
+        saveStats(newStats);
+        return newStats;
+      });
       return true;
     }
     return false;
-  };
+  }, [stats.unlockedClasses, saveStats]);
 
-  const allocateStat = (stat: keyof PlayerStats, amount: number = 1) => {
+  const allocateStat = useCallback((stat: keyof PlayerStats, amount: number = 1) => {
     setStats((prev) => {
       if (prev.availablePoints < amount) return prev;
-      return {
+      const newStats = {
         ...prev,
         [stat]: (prev[stat] as number) + amount,
         availablePoints: prev.availablePoints - amount,
       };
+      saveStats(newStats);
+      return newStats;
     });
-  };
+  }, [saveStats]);
 
-  const getRank = (level: number): string => {
-    if (level >= 100) return "S-Rank";
-    if (level >= 75) return "A-Rank";
-    if (level >= 50) return "B-Rank";
-    if (level >= 25) return "C-Rank";
-    if (level >= 6) return "D-Rank";
-    return "E-Rank";
-  };
-
-  const getTotalPower = (): number => {
+  const getTotalPower = useCallback((): number => {
     return stats.strength + stats.agility + stats.intelligence + stats.vitality + stats.sense;
-  };
+  }, [stats]);
 
-  const getXPForNextLevel = (): number => {
+  const getXPForNextLevel = useCallback((): number => {
     return calculateXPForNextLevel(stats.level);
-  };
+  }, [stats.level]);
 
-  const getCurrentLevelXP = (): number => {
+  const getCurrentLevelXP = useCallback((): number => {
     return stats.totalXP - calculateTotalXPForLevel(stats.level);
-  };
+  }, [stats.totalXP, stats.level]);
 
-  const applyGatePenalty = () => {
+  const applyGatePenalty = useCallback(() => {
     setStats((prev) => {
-      // Calculate penalties
       const creditsLoss = Math.round(prev.credits * 0.1);
       const xpLoss = Math.round(prev.totalXP * 0.1);
       let newTotalXP = Math.max(0, prev.totalXP - xpLoss);
       
-      // Calculate new level after XP loss
       let newLevel = prev.level;
       while (newLevel > 1 && newTotalXP < calculateTotalXPForLevel(newLevel)) {
         newLevel -= 1;
       }
       
-      // Apply level demotion (additional -1 level)
       newLevel = Math.max(1, newLevel - 1);
       
-      // Cap totalXP to prevent overflow after demotion
       const maxAllowedXP = calculateTotalXPForLevel(newLevel + 1) - 1;
       newTotalXP = Math.min(newTotalXP, maxAllowedXP);
       
-      // Apply stat penalties (-5 each)
-      const newStrength = Math.max(10, prev.strength - 5);
-      const newAgility = Math.max(10, prev.agility - 5);
-      const newIntelligence = Math.max(10, prev.intelligence - 5);
-      const newVitality = Math.max(10, prev.vitality - 5);
-      const newSense = Math.max(10, prev.sense - 5);
-      
-      return {
+      const newStats = {
         ...prev,
         credits: Math.max(0, prev.credits - creditsLoss),
         totalXP: newTotalXP,
         xp: newTotalXP - calculateTotalXPForLevel(newLevel),
         level: newLevel,
-        strength: newStrength,
-        agility: newAgility,
-        intelligence: newIntelligence,
-        vitality: newVitality,
-        sense: newSense,
+        strength: Math.max(10, prev.strength - 5),
+        agility: Math.max(10, prev.agility - 5),
+        intelligence: Math.max(10, prev.intelligence - 5),
+        vitality: Math.max(10, prev.vitality - 5),
+        sense: Math.max(10, prev.sense - 5),
         rank: getRank(newLevel),
       };
+      
+      saveStats(newStats);
+      return newStats;
     });
-  };
+  }, [saveStats]);
 
-  // Necromancer Normal Mode penalty: 5% loss of major stats
-  const applyNecromancerNormalPenalty = () => {
+  const applyNecromancerNormalPenalty = useCallback(() => {
     setStats((prev) => {
       const xpLoss = Math.round(prev.totalXP * 0.05);
       const goldLoss = Math.round(prev.gold * 0.05);
@@ -285,7 +386,7 @@ export const usePlayerStats = () => {
         newLevel -= 1;
       }
       
-      return {
+      const newStats = {
         ...prev,
         totalXP: newTotalXP,
         xp: newTotalXP - calculateTotalXPForLevel(newLevel),
@@ -300,13 +401,15 @@ export const usePlayerStats = () => {
         sense: Math.max(10, Math.round(prev.sense * 0.95)),
         rank: getRank(newLevel),
       };
+      
+      saveStats(newStats);
+      return newStats;
     });
-  };
+  }, [saveStats]);
 
-  // Necromancer Hard Mode penalty: Complete reset (stats/currencies only, keep user data structures)
-  const applyNecromancerHardPenalty = () => {
-    setStats((prev) => ({
-      ...prev,
+  const applyNecromancerHardPenalty = useCallback(() => {
+    const resetStats: PlayerStats = {
+      ...stats,
       level: 1,
       xp: 0,
       totalXP: 0,
@@ -322,27 +425,16 @@ export const usePlayerStats = () => {
       rank: "E-Rank",
       title: "Awakened Hunter",
       unlockedClasses: [],
-      // Keep: name, avatar, selectedCardFrame, unlockedCardFrames, isFirstTime
-    }));
+    };
     
-    // Reset quests completion status but keep the quests themselves
-    const currentQuests = storage.getQuests();
-    storage.setQuests(currentQuests.map(q => ({ ...q, completed: false })));
-    
-    // Reset streak
-    storage.setStreak({
-      currentStreak: 0,
-      longestStreak: 0,
-      lastCompletionDate: null,
-      totalRewards: 0
-    });
-  };
+    setStats(resetStats);
+    saveStats(resetStats);
+  }, [stats, saveStats]);
 
-  // Apply Hard Mode rewards
-  const applyHardModeRewards = () => {
+  const applyHardModeRewards = useCallback(() => {
     setStats((prev) => {
       const newLevel = prev.level + 10;
-      return {
+      const newStats = {
         ...prev,
         level: newLevel,
         totalXP: calculateTotalXPForLevel(newLevel),
@@ -357,14 +449,17 @@ export const usePlayerStats = () => {
         gems: (prev.gems || 0) + 5,
         rank: getRank(newLevel),
       };
+      
+      saveStats(newStats);
+      return newStats;
     });
-  };
+  }, [saveStats]);
 
-  // Get current stats for external use (e.g., cloud sync)
   const getCurrentStats = useCallback(() => stats, [stats]);
 
   return {
     stats,
+    loading,
     addXP,
     addGold,
     addGems,
@@ -383,5 +478,6 @@ export const usePlayerStats = () => {
     applyHardModeRewards,
     getActiveBoostMultiplier,
     getCurrentStats,
+    fetchStats,
   };
 };
